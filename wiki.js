@@ -61,16 +61,23 @@ app.get("/author/new", function(req, res) {
 	res.render("author_new.ejs");
 });
 
+
 // adding new authors to my authors table
 app.post("/authors", function(req, res) {
 	var a_name = req.body.name;
-	console.log(req.body);
 	var bio = req.body.bio;
-	db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name, bio, function(err) {
-		if (err) {
-			throw err;
+	db.all("SELECT name FROM authors WHERE name=?;", a_name, function(err, rows) {
+		if (rows.length > 0) {
+			var not_unique = "That name is taken!"
+			res.render("author_new.ejs", {a_name: a_name, bio: bio, not_unique: not_unique});
 		} else {
-			res.redirect("/authors");
+			db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name, bio, function(err) {
+				if (err) {
+					throw err;
+				} else {
+					res.redirect("/authors");
+				}
+			});
 		}
 	});
 });
@@ -79,9 +86,8 @@ app.post("/authors", function(req, res) {
 app.get("/author/:a_id", function(req, res) {
 	var a_id = req.params.a_id;
 	db.get("SELECT * FROM authors WHERE a_id ="+a_id, function(err, rows) {
-		db.get("SELECT * FROM pages WHERE a_id ="+a_id, function(err, rows1) {
+		db.all("SELECT * FROM pages WHERE a_id ="+a_id, function(err, rows1) {
 			var bio = marked(rows.bio);
-			console.log(rows1);
 			res.render("author_show.ejs", {author: rows, bio: bio, pages: rows1});
 		});
 	});
@@ -90,7 +96,6 @@ app.get("/author/:a_id", function(req, res) {
 // contents of site which should contain all titles of pages
 app.get("/table_of_contents", function(req, res) {
 	db.all("SELECT * FROM pages", function(err, rows) {
-		console.log(rows); 
 		res.render("pages.ejs", {pages : rows});
 	});
 });
@@ -105,12 +110,15 @@ app.get("/table_of_contents/:p_id", function(req, res) {
 	});
 });
 
+
 // rendering the form to add a new page
-app.get("/pages/new" function(req, res) {
-	res.render("page_new.ejs");
+app.get("/pages/new", function(req, res) {
+	db.all("SELECT * FROM authors;", function(err, rows) {
+		res.render("page_new.ejs", {authors: rows});
+	});
 });
 
-// inserting a info into the pages table to add a page 
+// inserting info into the pages table to add a page 
 app.post("/pages", function(req, res) {
 	var title = req.body.title;
 	var p_body = req.body.p_body;
@@ -118,6 +126,33 @@ app.post("/pages", function(req, res) {
 		res.redirect("/pages");
 	});
 });
+
+// adding a section to a page
+app.get("/page/:p_id/sections/new", function(req, res) {
+	var p_id = req.params.p_id;
+	db.all("SELECT * FROM pages WHERE p_id="+p_id, function(err, rows) {
+		res.render("section_new.ejs", {title: title});
+	});
+});
+
+// adding a section of a page to the database
+app.post("/page/:p_id", function(req, res) {
+	var p_id = req.params.p_id;
+	db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES p_id="+p_id, function(err) {
+		res.redirect("/page/"+p_id);
+	});
+});
+
+// to get to each park's individual full page
+app.get("/page/:p_id", function(req, res) {
+	var p_id = req.params.p_id;
+	db.get("SELECT * FROM pages WHERE p_id="+p_id, function(err, rows) {
+		db.all("SELECT * FROM sections WHERE p_id="+p_id, function(err, rows1) {
+			res.render("page_show.ejs", {page: rows, sections: rows1});
+		});
+	});
+});
+
 
 // making the server listen on port 3000
 app.listen(3000);

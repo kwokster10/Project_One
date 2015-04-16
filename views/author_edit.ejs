@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<meta charset="UTF-8">
+	<title>Edit Author</title>
+</head>
+
+<% include head %>
+
+<div class="content">
+	<h1>Editting <%= author.name %>'s Profile</h1>
+	<p>
+	<form action="/author/:a_id/edit?_method=PUT" method="POST">
+		<input type="text" name="name" value="<%= author.name %>" required><br>
+		<br>
+		Tell us a little about yourself:<br>(This can also be done in markdown format)<br>
+		<textarea name="bio" rows=5 cols=30 required><%= author.bio %></textarea>
+		<button>Submit</button>
+	</form>
+</div>
+
+</body>
+</html>

@@ -11,13 +11,24 @@
 <div class="content">
 	<h1>Becoming an author</h1>
 	<p>
-	<form action="/authors" method="POST">
-		<input type="text" name="name" placeholder="your name" required><br>
-		<br>
-		Tell us a little about yourself:<br>(This can also be done in markdown format)<br>
-		<textarea name="bio" rows=5 cols=30 required></textarea>
-		<button>Submit</button>
-	</form>
+	<% if (typeof not_unique === "string") { %>
+		<h3 style="color: red"><%= not_unique %></h3>
+		<form action="/authors" method="POST">
+			<input type="text" name="name" value="<%=a_name%>" required><br>
+			<br>
+			Tell us a little about yourself:<br>(This can also be done in markdown format)<br>
+			<textarea name="bio" rows=5 cols=30 required><%= bio %></textarea>
+			<button>Submit</button>
+		</form>
+	<% } else { %>
+		<form action="/authors" method="POST">
+			<input type="text" name="name" placeholder="unique username" required><br>
+			<br>
+			Tell us a little about yourself:<br>(This can also be done in markdown format)<br>
+			<textarea name="bio" rows=5 cols=30 required></textarea>
+			<button>Submit</button>
+		</form>
+	<% } %>
 </div>
 
 </body>

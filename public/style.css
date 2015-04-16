@@ -1,13 +1,9 @@
 .top {
-	position: top;
 	height: 100px;
-	padding: 10px;
-	font-size: 15px;
 	float: right;
 }
 #panel {
 	width: 120px;
-	height: 100%;
 	font-size: 15px;
 	float: left;
 }
@@ -29,13 +25,15 @@
 	color: blue;
 }
 .top ul {
-	display: block;
 	padding: 10px;
 	padding-right: 20px;
 }
+.top li {
+	padding: 10px;
+	font-size: 15px;
+}
 .content {
-	width: 500px;
-	height: 100%;
+	width: 700px;
 	padding-top: 70px;
 	padding-left: 20px;
 	float: left;
@@ -44,9 +42,9 @@
 	float: right;
 	padding: 10px;
 }
-.content li {
-	display: block;
-	padding: 10px;
+.content ul {
+	display: inline-block;
 }
 
 
+/*Need to get the content width to be relative and the height of panel to be entire side of page*/

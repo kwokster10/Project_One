@@ -2,8 +2,7 @@ DROP TABLE IF EXISTS authors;
 CREATE TABLE authors (
 	a_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	name TEXT,
-	bio TEXT,
-	p_id INTEGER
+	bio TEXT
 );
 
 DROP TABLE IF EXISTS pages; 
@@ -26,6 +25,7 @@ CREATE TABLE sections (
 	subtitle TEXT, 
 	sub_body TEXT,
 	p_id INTEGER,
+	a_id INTEGER,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -36,8 +36,8 @@ END;
 DROP TABLE IF EXISTS discussions;
 CREATE TABLE discussions (
 	d_id INTEGER PRIMARY KEY AUTOINCREMENT,
-	p_id INTEGER,
-	d_body TEXT, 
+	d_body TEXT,
+	p_id INTEGER, 
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -53,7 +53,7 @@ CREATE TABLE history (
 
 DROP TABLE IF EXISTS subscribers;
 CREATE TABLE subscribers (
-	s_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+	subs_id INTEGER PRIMARY KEY AUTOINCREMENT,  
 	subscriber_email TEXT,
 	p_id INTEGER
 );

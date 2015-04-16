@@ -11,12 +11,10 @@
 	<%- bio %>
 	<h3>Authored/Contributed To:</h3>
 	<ul>
-	<% if (pages != undefined) { %>
-		<!-- <ul>
-		<% for(var i = 0; i < pages.length; i++) { %> -->
-		<li><a href="/page/<%=pages.p_id%>"><%= pages.title %></a></li>
-	<% } %>
-	<!-- </ul> -->
+	<% if (pages != undefined) { for(var i = 0; i < pages.length; i++) { %> 
+		<li><a href="/page/<%= pages[i].p_id %>"><%= pages[i].title %></a></li>
+	<% }} %>
+	</ul>
 </div>
 </body>
 </html>
