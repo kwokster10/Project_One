@@ -34,7 +34,7 @@ app.get("/main", function(req, res) {
 });
 
 app.get("/how_to_edit", function(req, res) {
-	res.render("how_edit.ejs");
+	res.render("how_to.ejs");
 });
 
 app.get("/search", function(req, res) {
@@ -45,7 +45,7 @@ app.get("/search", function(req, res) {
 });
 
 app.get("/authors", function(req, res) {
-	db.all("SELECT * FROM authors;", function(err, rows)) {
+	db.all("SELECT * FROM authors;", function(err, rows) {
 		res.render("authors.ejs", {authors : rows})
 	});
 });
