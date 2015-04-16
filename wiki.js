@@ -21,22 +21,27 @@ var sqlite3 = require("sqlite3").verbose();
 // requiring the db that holds tables
 var db = new sqlite3.Database("wiki.db");
 // so that my css stylesheet will be connected 
-app.use(express.static("public"));
+app.use(express.static(__dirname+"/public"));
 // module for marked down files to become html
 var marked = require("marked");
 
+
+// redirecting to my homepage
 app.get("/", function(req, res) {
 	res.redirect("/main");
 });
 
+// my homepage or main page
 app.get("/main", function(req, res) {
 	res.render("index.ejs");
 });
 
+// page to teach people how to edit pages
 app.get("/how_to_edit", function(req, res) {
 	res.render("how_to.ejs");
 });
 
+// if they wanted to search the site for titles 
 app.get("/search", function(req, res) {
 	db.all("SELECT * FROM pages", function(err, rows) {
 		// search through the titles with match and send the matches to /search page
@@ -44,16 +49,26 @@ app.get("/search", function(req, res) {
 	});
 });
 
+// all authors page
 app.get("/authors", function(req, res) {
 	db.all("SELECT * FROM authors;", function(err, rows) {
 		res.render("authors.ejs", {authors : rows})
 	});
 });
 
+// for new authors to register
 app.get("/author/new", function(req, res) {
 	res.render("author_new.ejs");
 });
 
+app.post("/authors", function(req, res) {
+	var data = req.body;
+	db.run("INSERT INTO authors SET (name, bio) VALUES (?, ?);" data.name, data.bio, function(err) {
+		res.redirect("/auhors");
+	});
+})
+
+// contents of site which should contain all titles of pages
 app.get("/table_of_contents", function(req, res) {
 	db.all("SELECT * FROM pages", function(err, rows) {
 		res.render("pages.ejs", {pages : rows});

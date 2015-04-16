@@ -4,18 +4,66 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<meta charset="UTF-8">
 	<title>New Author</title>
+	<style>
+	.top {
+	position: top;
+	height: 100px;
+	padding: 10px;
+	font-size: 15px;
+	float: right;
+	}
+	#panel {
+		width: 120px;
+		height: 100%;
+		font-size: 15px;
+		float: left;
+	}
+	#panel a {
+		text-decoration: none;
+		color: blue;
+		padding: 5px;
+		float: left;
+	}
+	#panel ul {
+		padding: 15px;
+		padding-right: 20px;
+	}
+	#panel a:hover, .top a:hover {
+		color: grey;
+	}
+	.top a  {
+		text-decoration: none;
+		color: blue;
+	}
+	.top ul {
+		display: block;
+		padding: 10px;
+		padding-right: 20px;
+	}
+	.content {
+		width: 500px;
+		height: 100%;
+		padding-top: 70px;
+		padding-left: 20px;
+		float: left;
+	}
+	</style>
 </head>
+
 <% include head %>
+
 <div class="content">
 	<h1>Becoming an author</h1>
+	<p>
 	<form action="/authors" method="POST">
-		<input type="text" name="name" placeholder="your name"><br>
+		<input type="text" name="name" placeholder="your name" required><br>
 		<br>
 		<label>Tell us a little about yourself:</label><br>
-		<textarea rows="5" cols="30"></textarea>
+		<textarea name="bio" rows="5" cols="30" required></textarea>
 		<button>Submit</button>
 	</form>
 </div>
 
 </body>
 </html>
+

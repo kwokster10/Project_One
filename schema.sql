@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS;
+DROP TABLE IF EXISTS authors;
 CREATE TABLE authors (
 	a_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	name TEXT,
@@ -6,7 +6,7 @@ CREATE TABLE authors (
 	p_id INTEGER
 );
 
-DROP TABLE IF EXISTS; 
+DROP TABLE IF EXISTS pages; 
 CREATE TABLE pages (
 	p_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	title TEXT,
@@ -16,32 +16,40 @@ CREATE TABLE pages (
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER timestamp_update BEFORE UPDATE ON pages BEGIN UPDATE entries SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id;
+CREATE TRIGGER timestamp_update_a BEFORE UPDATE ON pages BEGIN UPDATE pages SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id;
 END;
 
 
-DROP TABLE IF EXISTS; 
+DROP TABLE IF EXISTS sections; 
 CREATE TABLE sections (
 	s_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	subtitle TEXT, 
 	sub_body TEXT,
-	sub_image TEXT,
-	sub_caption TEXT,
 	p_id INTEGER,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER timestamp_update BEFORE UPDATE ON pages BEGIN UPDATE entries SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id;
+CREATE TRIGGER timestamp_update_b BEFORE UPDATE ON sections BEGIN UPDATE sections SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id;
 END;
 
-DROP TABLE IF EXISTS;
+DROP TABLE IF EXISTS discussions;
+CREATE TABLE discussions (
+	d_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	p_id INTEGER,
+	d_name TEXT,
+	body TEXT, 
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS history;
 CREATE TABLE history (
 	h_id INTEGER PRIMARY KEY,
 	p_id INTEGER,
 	s_id INTEGER,
 	old_body TEXT,
-	updated TEXT
+	updated_on TEXT,
+	subscriber_email TEXT
 );
 
 
