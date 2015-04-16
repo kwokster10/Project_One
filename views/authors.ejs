@@ -7,10 +7,12 @@
 </head>
 <% include head %>
 <div class="content">
-
+	<h1>Our Authors</h1>
+	<ul>
+	<% for(var i = 0; i < authors.length; i++) { %>
+		<li><a href="/author/<%= authors[i].a_id %>"><%= authors[i].name %></li>
+	<% } %>
+	</ul>
 </div>
-
-
-
 </body>
 </html>

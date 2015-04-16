@@ -61,12 +61,27 @@ app.get("/author/new", function(req, res) {
 	res.render("author_new.ejs");
 });
 
+// adding new authors to my authors table
 app.post("/authors", function(req, res) {
-	var data = req.body;
-	db.run("INSERT INTO authors SET (name, bio) VALUES (?, ?);" data.name, data.bio, function(err) {
-		res.redirect("/auhors");
+	var a_name = req.body.name;
+	console.log(req.body);
+	var bio = marked(req.body.bio);
+	db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name, bio, function(err) {
+		if (err) {
+			throw err;
+		} else {
+			res.redirect("/authors");
+		}
 	});
-})
+});
+
+// each authors individual page
+app.get("/author/:a_id", function(req, res) {
+	var a_id = req.params.a_id;
+	db.all("SELECT * FROM authors WHERE a_id ="+a_id, function(err, rows) {
+		res.render("author_show.ejs", {author: rows});
+	});
+});
 
 // contents of site which should contain all titles of pages
 app.get("/table_of_contents", function(req, res) {
@@ -75,6 +90,15 @@ app.get("/table_of_contents", function(req, res) {
 	});
 });
 
+// rendering what each page will look like
+app.get("/table_of_contents/:p_id", function(req, res) {
+	var p_id = req.params.p_id;
+	db.all("SELECT * FROM pages WHERE p_id ="+p_id, function(err, rows) {
+		db.all("SELECT * FROM sections WHERE p_id ="+p_id, function(err, rows1) {
+			res.render("pages.ejs", {pages: rows, sections: rows1});
+		});
+	});
+});
 
 
 // making the server listen on port 3000

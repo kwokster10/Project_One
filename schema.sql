@@ -37,7 +37,6 @@ DROP TABLE IF EXISTS discussions;
 CREATE TABLE discussions (
 	d_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	p_id INTEGER,
-	d_name TEXT,
 	body TEXT, 
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -48,9 +47,16 @@ CREATE TABLE history (
 	p_id INTEGER,
 	s_id INTEGER,
 	old_body TEXT,
-	updated_on TEXT,
-	subscriber_email TEXT
+	updated_on TEXT
 );
+
+DROP TABLE IF EXISTS subscribers;
+CREATE TABLE subscribers (
+	s_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+	subscriber_email TEXT,
+	p_id INTEGER
+);
+
 
 
 
