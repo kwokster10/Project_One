@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS discussions;
 CREATE TABLE discussions (
 	d_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	p_id INTEGER,
-	body TEXT, 
+	d_body TEXT, 
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -46,6 +46,7 @@ CREATE TABLE history (
 	h_id INTEGER PRIMARY KEY,
 	p_id INTEGER,
 	s_id INTEGER,
+	a_id INTEGER,
 	old_body TEXT,
 	updated_on TEXT
 );

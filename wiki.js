@@ -65,7 +65,7 @@ app.get("/author/new", function(req, res) {
 app.post("/authors", function(req, res) {
 	var a_name = req.body.name;
 	console.log(req.body);
-	var bio = marked(req.body.bio);
+	var bio = req.body.bio;
 	db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name, bio, function(err) {
 		if (err) {
 			throw err;
@@ -78,14 +78,19 @@ app.post("/authors", function(req, res) {
 // each authors individual page
 app.get("/author/:a_id", function(req, res) {
 	var a_id = req.params.a_id;
-	db.all("SELECT * FROM authors WHERE a_id ="+a_id, function(err, rows) {
-		res.render("author_show.ejs", {author: rows});
+	db.get("SELECT * FROM authors WHERE a_id ="+a_id, function(err, rows) {
+		db.get("SELECT * FROM pages WHERE a_id ="+a_id, function(err, rows1) {
+			var bio = marked(rows.bio);
+			console.log(rows1);
+			res.render("author_show.ejs", {author: rows, bio: bio, pages: rows1});
+		});
 	});
 });
 
 // contents of site which should contain all titles of pages
 app.get("/table_of_contents", function(req, res) {
 	db.all("SELECT * FROM pages", function(err, rows) {
+		console.log(rows); 
 		res.render("pages.ejs", {pages : rows});
 	});
 });
@@ -100,6 +105,19 @@ app.get("/table_of_contents/:p_id", function(req, res) {
 	});
 });
 
+// rendering the form to add a new page
+app.get("/pages/new" function(req, res) {
+	res.render("page_new.ejs");
+});
+
+// inserting a info into the pages table to add a page 
+app.post("/pages", function(req, res) {
+	var title = req.body.title;
+	var p_body = req.body.p_body;
+	db.run("INSERT INTO pages SET (title, body) VALUES (?, ?);", title, p_body, function(err) {
+		res.redirect("/pages");
+	});
+});
 
 // making the server listen on port 3000
 app.listen(3000);
