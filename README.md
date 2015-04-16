@@ -1,2 +1,2 @@
-# Project_One
-First GA Project
+# Project One
+First GA Project to create a wiki
