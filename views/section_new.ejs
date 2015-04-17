@@ -9,13 +9,19 @@
 <% include head %>
 
 <div class="content">
-	<h1>Adding a Section to <%= title %></h1>
+	<h1>Adding a Section to <%= page.title %></h1>
 	<p>
-	<form action="/page/<%= pages.p_id %>" method="POST">
+	<form action="/page/<%= page.p_id %>" method="POST">
+		<label>Who are you?</label>
+		<select name="author_name">
+		<% for (var i =0; i < authors.length; i++) { %>
+			<option value="<%= authors[i].name %>"><%= authors[i].name %></option>
+			<% } %>
+		</select><br><br>
 		<input type="text" name="subtitle" placeholder="section title" required><br>
 		<br>
 		Information relating to section title:<br>-Fill this out in markdown format-<br>
-		<textarea name="sub_body" rows=5 cols=50 required></textarea>
+		<textarea name="sub_body" rows=20 cols=60 required></textarea>
 		<button>Submit</button>
 	</form>
 	<br>
@@ -25,3 +31,5 @@
 
 </body>
 </html>
+
+

@@ -42,8 +42,10 @@
 	float: right;
 	padding: 10px;
 }
-.content ul {
-	display: inline-block;
+.content li {
+	text-decoration: none;
+	display: block;
+	padding: 5px;
 }
 
 

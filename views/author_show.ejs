@@ -8,6 +8,7 @@
 <% include head %>
 <div class="content">
 	<h1><%= author.name %></h1>
+	<a href="/author/<%= author.a_id %>/edit">edit</a><br>
 	<%- bio %>
 	<h3>Authored/Contributed To:</h3>
 	<ul>
@@ -15,6 +16,8 @@
 		<li><a href="/page/<%= pages[i].p_id %>"><%= pages[i].title %></a></li>
 	<% }} %>
 	</ul>
+	<br>
+	
 </div>
 </body>
 </html>

@@ -21,7 +21,7 @@ END;
 
 DROP TABLE IF EXISTS sections; 
 CREATE TABLE sections (
-	s_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	subtitle TEXT, 
 	sub_body TEXT,
 	p_id INTEGER,
@@ -46,7 +46,7 @@ CREATE TABLE history (
 	h_id INTEGER PRIMARY KEY,
 	p_id INTEGER,
 	s_id INTEGER,
-	a_id INTEGER,
+	id INTEGER,
 	old_body TEXT,
 	updated_on TEXT
 );
