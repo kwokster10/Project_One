@@ -3,25 +3,26 @@
 <head>
 	<link rel="stylesheet" type="text/css" href="/style.css">
 	<meta charset="UTF-8">
-	<title>New Section</title>
+	<title>Edit Page</title>
 </head>
 
 <% include head %>
 
 <div class="content">
-	<h1>Editing <%= section.subtitle %> of <%= page.title %></h1>
+	<h1>Editing <%= page.title %></h1>
 	<p>
-	<form action="/page/<%= page.id %>/section/<%= section.id %>?_method=PUT" method="POST">
+	<form action="/page/<%= page.id %>?_method=PUT" method="POST">
 		<label>Who are you?</label>
 		<select name="a_id">
 		<% for (var i =0; i < authors.length; i++) { %>
 			<option value="<%= authors[i].id %>"><%= authors[i].name %></option>
 			<% } %>
 		</select><br><br>
-		<input type="text" name="subtitle" value="<%= section.subtitle %>" required><br>
+		<label>Name of Park</label><br>
+		<input type="text" name="title" value="<%= page.title %>" required><br>
 		<br>
-		Information relating to section title:<br>-Fill this out in markdown format-<br>
-		<textarea name="sub_body" rows=20 cols=60 required><%= section.sub_body %></textarea>
+		General information about the park:<br>-Fill this out in markdown format-<br>
+		<textarea name="p_body" rows=20 cols=60 required><%= page.body %></textarea>
 		<button>Submit</button>
 	</form>
 	<br>
@@ -31,3 +32,5 @@
 
 </body>
 </html>
+
+

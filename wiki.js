@@ -84,19 +84,19 @@ app.post("/authors", function(req, res) {
 // each authors individual page
 app.get("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
-	db.get("SELECT * FROM authors WHERE a_id ="+a_id, function(err, rows) {
-		db.all("SELECT * FROM pages WHERE a_id ="+a_id, function(err, rows1) {
+	db.get("SELECT * FROM authors WHERE id = ?;", a_id, function(err, rows) {
+		db.all("SELECT * FROM pages WHERE a_id = ?;", a_id, function(err, rows1) {
+			console.log(rows);
 			var bio = marked(rows.bio);
 			res.render("author_show.ejs", {author: rows, bio: bio, pages: rows1});
 		});
 	});
 });
 
-// rendering the edit page
+// rendering the author edit page
 app.get("/author/:a_id/edit", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
-	console.log(typeof a_id);
-	db.get("SELECT * FROM authors WHERE a_id="+a_id+";", function(err, rows) {
+	db.get("SELECT * FROM authors WHERE a_id= ?;", a_id, function(err, rows) {
 		res.render("author_edit.ejs", {author: rows});
 	});
 });
@@ -104,7 +104,7 @@ app.get("/author/:a_id/edit", function(req, res) {
 // updating the specific author 
 app.put("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
-	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id ="+a_id+";", req.body.name, req.body.bio, function(err) {
+	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id =?;", a_id, req.body.name, req.body.bio, function(err) {
 		if (err) {
 			throw err;
 		} else {
@@ -129,14 +129,35 @@ app.get("/pages/new", function(req, res) {
 
 // inserting into the contents table to add a new page 
 app.post("/table_of_contents", function(req, res) {
-	var a_name = req.body.author_name;
 	var title = req.body.title;
 	var p_body = req.body.p_body;
-	db.get("SELECT a_id FROM authors WHERE name = ?;", a_name, function(err, rows) {
-		var a_id = rows.a_id;
-		db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, p_body, a_id, function(err) {
-			res.redirect("/table_of_contents");
+	var a_id = req.body.a_id;
+	db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, p_body, a_id, function(err) {
+		res.redirect("/table_of_contents");
+	});
+});
+
+// rendering main page edit page
+app.get("/page/:p_id/edit", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.all("SELECT * FROM authors;", function(err, rows) {
+		db.get("SELECT * FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+			res.render("page_edit.ejs", {authors: rows, page: rows1});
 		});
+	});
+});
+
+// updating a main page
+app.put("/page/:p_id", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	console.log(req.body);
+	// still need to add history and not change a_id of original 
+	db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title, req.body.p_body, req.body.a_id, p_id, function(err) {
+		if (err) {
+			throw err;
+		} else {
+			res.redirect("/table_of_contents");
+		}
 	});
 });
 
@@ -144,23 +165,21 @@ app.post("/table_of_contents", function(req, res) {
 app.get("/page/:p_id/sections/new", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	db.all("SELECT * FROM authors;", function(err, rows) {
-		db.get("SELECT * FROM pages WHERE p_id="+p_id+";", function(err, rows1) {
+		db.get("SELECT * FROM pages WHERE id = ?;", p_id, function(err, rows1) {
 			res.render("section_new.ejs", {page: rows1, authors: rows});
 		});
 	});
 });
 
-// to get to each park's individual full page
+// to get to each park's individual full page making sure to convert md to html
 app.get("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	db.get("SELECT * FROM pages WHERE p_id="+p_id+";", function(err, rows) {
+	db.get("SELECT * FROM pages WHERE id= ?;", p_id, function(err, rows) {
 		var p_body = marked(rows.body);
-		db.all("SELECT * FROM sections WHERE p_id="+p_id+";", function(err, rows1) {
+		db.all("SELECT * FROM sections WHERE p_id = ?;", p_id, function(err, rows1) {
 			rows1.map(function(obj) {
 				obj.sub_body = marked(obj.sub_body);
 			});
-			console.log(marked(rows1[1].sub_body));
-			console.log(rows1);
 			res.render("page_show.ejs", {page: rows, sections: rows1, p_body: p_body});
 		});
 	});
@@ -170,8 +189,8 @@ app.get("/page/:p_id", function(req, res) {
 app.post("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var a_name = req.body.author_name;
-	db.get("SELECT a_id FROM authors WHERE name = ?;", a_name, function(err, rows) {
-		var a_id = rows.a_id;
+	db.get("SELECT id FROM authors WHERE name = ?;", a_name, function(err, rows) {
+		var a_id = rows.id;
 		db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
 			res.redirect("/page/"+p_id);
 		});
@@ -179,12 +198,12 @@ app.post("/page/:p_id", function(req, res) {
 });
 
 // getting form to update a section 
-app.get("/page/:p_id/section/:id/edit", function(req, res) {
+app.get("/page/:p_id/section/:s_id/edit", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	var id = parseInt(req.params.id);
+	var s_id = parseInt(req.params.s_id);
 	db.all("SELECT * FROM authors;", function(err, rows) {
-		db.get("SELECT * FROM pages WHERE p_id="+p_id+";", function(err, rows1) {
-			db.get("SELECT * FROM sections WHERE id="+id+";", function(err, rows2) {
+		db.get("SELECT * FROM pages WHERE id= ?;", p_id, function(err, rows1) {
+			db.get("SELECT * FROM sections WHERE id = ?;", s_id, function(err, rows2) {
 				res.render("section_edit.ejs", {authors: rows, page: rows1, section: rows2})
 			});
 		});
@@ -192,19 +211,44 @@ app.get("/page/:p_id/section/:id/edit", function(req, res) {
 });
 
 // editing a section and updating the database
-app.put("/page/:p_id/section/:id", function(req, res) {
+app.put("/page/:p_id/section/:s_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	var id = parseInt(req.params.id);
-	var a_name = req.body.author_name;
-	db.get("SELECT a_id FROM authors WHERE name = ?;", a_name, function(err, rows) {
-		var a_id = rows.a_id;
-		db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, id, function(err) {
+	var s_id = parseInt(req.params.s_id);
+	var a_id = req.body.a_id;
+	// still need to add history and not change a_id of original 
+	db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
+		if (err) {
+			throw err;
+		} else {
+			res.redirect("/page/"+p_id);
+		}
+	});
+});
+
+// delete a page which deletes all of it's articles
+app.delete("/page/:p_id", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.run("DELETE FROM pages WHERE id = ?;", p_id, function(err) {
+		db.run("DELETE FROM sections WHERE p_id = ?;", p_id, function(err) {
 			if (err) {
-				throw err;
+				throw err; 
 			} else {
-				res.redirect("/page/"+p_id);
+				res.redirect("/table_of_contents");
 			}
 		});
+	});
+});
+
+// delete a section
+app.delete("/page/:p_id/section/:s_id", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	var s_id = parseInt(req.params.s_id);
+	db.run("DELETE FROM sections WHERE id = ?;", s_id, function(err) {
+		if (err) {
+			throw err; 
+		} else {
+			res.redirect("/page/"+p_id);
+		}
 	});
 });
 

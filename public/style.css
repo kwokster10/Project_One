@@ -40,6 +40,8 @@
 }
 .content img {
 	float: right;
+	width: 300px;
+	height: auto;
 	padding: 10px;
 }
 .content li {

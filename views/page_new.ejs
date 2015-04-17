@@ -13,9 +13,9 @@
 	<p>
 	<form action="/table_of_contents" method="POST">
 		<label>Who are you?</label>
-		<select name="author_name">
+		<select name="a_id">
 		<% for (var i =0; i < authors.length; i++) { %>
-			<option value="<%= authors[i].name %>"><%= authors[i].name %></option>
+			<option value="<%= authors[i].id %>"><%= authors[i].name %></option>
 			<% } %>
 		</select><br><br>
 		<label>Name of Park</label><br>
@@ -32,3 +32,4 @@
 
 </body>
 </html>
+

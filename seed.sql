@@ -11,4 +11,5 @@ INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES ("Access", "The roa
   * San Juan River    $12/person/night	 	 
   * Monument Valley    $12/person/night  ", 1, 1);
 
+
 -- INSERT INTO history (p_id, s_id, a_id, old_body) VALUES ();
