@@ -150,7 +150,6 @@ app.get("/page/:p_id/edit", function(req, res) {
 // updating a main page
 app.put("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	console.log(req.body);
 	// still need to add history and not change a_id of original 
 	db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title, req.body.p_body, req.body.a_id, p_id, function(err) {
 		if (err) {
@@ -221,6 +220,48 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 			throw err;
 		} else {
 			res.redirect("/page/"+p_id);
+		}
+	});
+});
+
+// the discussion form 
+app.get("/page/:p_id/discussions/new", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.get("SELECT * FROM pages WHERE id = ?;", p_id, function(err, rows) {
+		res.render("discussion_new.ejs", {page: rows});
+	});
+});
+
+// showing the discussions for each page  
+app.get("/page/:p_id/discussions", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.get("SELECT * FROM pages WHERE id = ?;", p_id, function(err, rows) {
+		db.all("SELECT * FROM discussions WHERE p_id = ?;", p_id, function(err, rows1) {
+			rows1.map(function(obj) {
+				obj.d_body = marked(obj.d_body);
+			}); 
+			res.render("discussion_show.ejs", {page: rows, discussions: rows1});
+		});
+	});
+});
+
+// posting the discussions 
+app.post("/page/:p_id/discussions/add", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.run("INSERT INTO discussions (d_name, d_title, d_body, p_id) VALUES (?, ?, ?, ?);", req.body.d_name, req.body.d_title, req.body.d_body, p_id, function(err) {
+		res.redirect("/page/"+p_id+"/discussions");
+	});
+});
+
+// deleting a discussion topic
+app.delete("/page/:p_id/discussion/:d_id", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	var d_id = parseInt(req.params.d_id);
+	db.run("DELETE FROM discussions WHERE id = ?;", d_id, function(err) {
+		if (err) {
+			throw err;
+		} else {
+			res.redirect("/page/"+p_id+"/discussions");
 		}
 	});
 });

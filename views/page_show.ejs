@@ -4,10 +4,10 @@
 	<link rel="stylesheet" type="text/css" href="/style.css">
 	<meta charset="UTF-8">
 	<title>Content</title>
-	<script src="lib/marked.js"></script>
 </head>
 <% include head %>
 <div class="content">
+	<a href="/page/<%= page.id %>/discussions">Discussions</a>
 	<h1><%= page.title %></h1>
 	<a href="/page/<%= page.id %>/edit">edit</a>
 	<%- p_body %>
@@ -26,6 +26,7 @@
 	<% }} %>
 	<br><br><br>
 	<a href="/page/<%= page.id %>/sections/new">Add Another Section</a>
+	<br><br><br>
 </div>
 </body>
 </html>

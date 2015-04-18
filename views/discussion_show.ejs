@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<meta charset="UTF-8">
+	<title>Content</title>
+	<script src="lib/marked.js"></script>
+</head>
+<% include head %>
+<div class="content">
+	<h1>Discussion: <%= page.title %></h1>
+	<p>
+	This is an open space for you to post any questions or make any comments. To comment on an exiting discussion, click on the edit button.
+	<br>
+	<% if (discussions != "undefined") { %>
+		<% discussions.forEach(function(obj) { %>
+		<h4><%= obj.d_title %></h4>
+			<%- obj.d_body %>
+			<small>started on <%= obj.created_at %> by <%= obj.d_name %></small>
+		<form action="/page/<%= page.id %>/discussion/<%= obj.id %>?_method=DELETE" method="POST">
+		<input type="checkbox" name="delete" required>
+		<button>Delete</button>
+		</form>
+	<% })}; %>
+	<br><br><br>
+	<a href="/page/<%= page.id %>/discussions/new">Start a Discussion</a>
+	<br><br><br>
+</div>
+</body>
+</html>
+
