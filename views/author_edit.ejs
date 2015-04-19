@@ -12,7 +12,7 @@
 	<h1>Editing <%= author.name %>'s Profile</h1>
 	<p>
 	<form action="/author/<%= author.id %>?_method=PUT" method="POST">
-		<input type="text" name="name" value="<%= author.name %>" required><br>
+		<input type="hidden" name="name" value="<%= author.name %>" required><br>
 		<br>
 		Tell us a little about yourself:<br>(This can also be done in markdown format)<br>
 		<textarea name="bio" rows=5 cols=30 required><%= author.bio %></textarea>

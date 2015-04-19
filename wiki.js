@@ -86,7 +86,6 @@ app.get("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
 	db.get("SELECT * FROM authors WHERE id = ?;", a_id, function(err, rows) {
 		db.all("SELECT * FROM pages WHERE a_id = ?;", a_id, function(err, rows1) {
-			console.log(rows);
 			var bio = marked(rows.bio);
 			res.render("author_show.ejs", {author: rows, bio: bio, pages: rows1});
 		});
@@ -240,7 +239,13 @@ app.get("/page/:p_id/discussions", function(req, res) {
 			rows1.map(function(obj) {
 				obj.d_body = marked(obj.d_body);
 			}); 
-			res.render("discussion_show.ejs", {page: rows, discussions: rows1});
+			db.all("SELECT replies.id, replies.r_name, replies.r_body, replies.d_id, replies.created_at FROM replies INNER JOIN discussions ON replies.d_id = discussions.id WHERE discussions.p_id = ?;", p_id, function(err, rows2) {
+				rows2.map(function(obj1) {
+					obj1.r_body = marked(obj1.r_body);
+				}); 
+				console.log(rows2);
+				res.render("discussion_show.ejs", {page: rows, discussions: rows1, replies: rows2});
+			});
 		});
 	});
 });
@@ -253,16 +258,42 @@ app.post("/page/:p_id/discussions/add", function(req, res) {
 	});
 });
 
+// posting a reply
+app.post("/page/:p_id/discussion/:d_id/replies", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	var d_id = parseInt(req.params.d_id);
+	db.run("INSERT INTO replies (r_name, r_body, d_id) VALUES (?, ?, ?);", req.body.r_name, req.body.r_body, d_id, function(err) {
+		res.redirect("/page/"+p_id+"/discussions");
+	});
+});
+
+// deleting a specific reply
+app.delete("/page/:p_id/discussion/:d_id/reply/:r_id", function(req, res){
+	var p_id = parseInt(req.params.p_id);
+	var d_id = parseInt(req.params.d_id);
+	var r_id = parseInt(req.params.r_id);
+	db.run("DELETE FROM replies WHERE id = ?;", r_id, function(err) {
+		if (err) {
+			throw err;
+		} else{
+			console.log("does it reach here?")
+			res.redirect("/page/"+p_id+"/discussions");
+		}
+	});
+});
+
 // deleting a discussion topic
 app.delete("/page/:p_id/discussion/:d_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var d_id = parseInt(req.params.d_id);
 	db.run("DELETE FROM discussions WHERE id = ?;", d_id, function(err) {
-		if (err) {
-			throw err;
-		} else {
-			res.redirect("/page/"+p_id+"/discussions");
-		}
+		db.run("DELETE FROM replies WHERE d_id = ?;", d_id, function(err) {
+			if (err) {
+				throw err;
+			} else {
+				res.redirect("/page/"+p_id+"/discussions");
+			}
+		});
 	});
 });
 

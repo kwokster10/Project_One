@@ -12,7 +12,7 @@
 	<h1>Becoming an author</h1>
 	<p>
 	<% if (typeof not_unique === "string") { %>
-		<h3 style="color: red"><%= not_unique %></h3>
+		<h3 style="color: red;"><%= not_unique %></h3>
 		<form action="/authors" method="POST">
 			<input type="text" name="name" value="<%=a_name%>" required><br>
 			<br>

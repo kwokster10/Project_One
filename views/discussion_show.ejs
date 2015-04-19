@@ -4,27 +4,51 @@
 	<link rel="stylesheet" type="text/css" href="/style.css">
 	<meta charset="UTF-8">
 	<title>Content</title>
-	<script src="lib/marked.js"></script>
 </head>
+
 <% include head %>
+
 <div class="content">
 	<h1>Discussion: <%= page.title %></h1>
 	<p>
 	This is an open space for you to post any questions or make any comments. To comment on an exiting discussion, click on the edit button.
 	<br>
-	<% if (discussions != "undefined") { %>
+
 		<% discussions.forEach(function(obj) { %>
-		<h4><%= obj.d_title %></h4>
+		<h3><%= obj.d_title %></h3>
 			<%- obj.d_body %>
 			<small>started on <%= obj.created_at %> by <%= obj.d_name %></small>
-		<form action="/page/<%= page.id %>/discussion/<%= obj.id %>?_method=DELETE" method="POST">
-		<input type="checkbox" name="delete" required>
+	<form action="/page/<%= page.id %>/discussion/<%= obj.id %>?_method=DELETE" method="POST">
 		<button>Delete</button>
-		</form>
-	<% })}; %>
+	</form>
+		
+		<ul>
+		<% for (var i = 0; i < replies.length; i++) { %>
+		<% if (obj.id === replies[i].d_id) { %>
+			<%- replies[i].r_body %>
+			<li>
+			<small>replied on <%= replies[i].created_at %> by <%= replies[i].r_name %></small>
+			</li>
+			<%= JSON.stringify(replies[i]) %>
+			<form method="POST" action="/page/<%= page.id %>/discussion/<%= obj.id %>/reply/<%= replies[i].id %>?_method=DELETE">
+			<button>Delete</button>
+			</form>
+		<% }} %>
+		</ul>
+
+	<form action="/page/<%= page.id %>/discussion/<%= obj.id %>/replies" method="POST">
+		<label>Your name:  </label>
+		<input type="text" name="r_name" placeholder="your name" required><br>
+		Post a reply<br>
+		<textarea name="r_body" rows=5 cols=60 required></textarea>
+		<button>Reply</button>
+	</form>
+	<% });  %>
 	<br><br><br>
+
 	<a href="/page/<%= page.id %>/discussions/new">Start a Discussion</a>
 	<br><br><br>
+	</p>
 </div>
 </body>
 </html>
