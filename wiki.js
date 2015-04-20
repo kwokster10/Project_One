@@ -30,18 +30,32 @@ var secrets = require("./secrets.json");
 var apiName = secrets["apiName"];
 var apiKey = secrets["apiKey"];
 
+// requiring the sendgrid npm
 var sendgrid  = require('sendgrid')(apiName, apiKey);
-var email = new sendgrid.Email({
-  bcc: "subscriber@email.com",
-  from: "anonymous",
-  subject: "Title of Updated Page",
-  text: "Check out the new changes to page"
-});
 
-// sendgrid.send(email, function(err, json) {
-//   if (err) { return console.error(err); }
-//   console.log(json);
-// });
+// function to send email to subscribers 
+var send_email = function(p_id, page_title, db) {
+	db.all("SELECT * FROM subscribers WHERE p_id = ?;", p_id, function(err, rows) {
+		if (rows.length > 0) {
+			for (var i = 0; i < rows.length; i++) {
+				// compiling email content
+				var email = new sendgrid.Email({
+				  to: rows[i].subscriber_email,
+				  from: "no_reply@sendgrid.net",
+				  subject: page_title+" on Road Trippin' Wiki",
+				  text: "check out the new updates to "+page_title
+				});
+				// sending an email to anyone that signed up
+				sendgrid.send(email, function(err, json) {
+				  if (err) { return console.error(err); }
+				  console.log(json);
+				});
+			}
+		} else {
+			console.log("no subscribers");
+		}
+	});	
+};
 
 // redirecting to my homepage
 app.get("/", function(req, res) {
@@ -99,7 +113,7 @@ app.post("/authors", function(req, res) {
 		} else {
 			db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name.trim(), bio, function(err) {
 				if (err) {
-					res.redirect("error.ejs");
+					res.redirect("/error");
 				} else {
 					res.redirect("/authors");
 				}
@@ -132,7 +146,7 @@ app.put("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
 	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id =?;", req.body.name.trim(), req.body.bio, a_id, function(err) {
 		if (err) {
-			res.redirect("error.ejs");
+			res.redirect("/error");
 		} else {
 			res.redirect("/authors");
 		}
@@ -176,7 +190,7 @@ app.post("/table_of_contents", function(req, res) {
 				    } else {
 				         db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -191,7 +205,7 @@ app.post("/table_of_contents", function(req, res) {
 					if (total != undefined) {
 						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -199,7 +213,7 @@ app.post("/table_of_contents", function(req, res) {
 					} else {
 						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -211,7 +225,7 @@ app.post("/table_of_contents", function(req, res) {
 	} else {
 		db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
 			if (err) {
-				res.redirect("error.ejs");
+				res.redirect("/error");
 			} else {
 				res.redirect("/table_of_contents");
 			}
@@ -229,9 +243,33 @@ app.get("/page/:p_id/edit", function(req, res) {
 	});
 });
 
+// for the subscription confirmation 		
+app.get("/page/:p_id/subscribe", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows) {
+		res.render("subscribed.ejs", {page_id: p_id, page_title: rows.title});
+	});
+});
+
+// to add the subscriber to my table
+app.post("/page/:p_id/subscribe/add", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	console.log(req.params);
+	console.log(req.body);
+	console.log("hello");
+	db.run("INSERT INTO subscribers (subscriber_email, p_id) VALUES (?, ?);", req.body.subscribe, p_id, function(err) {
+		if (err) {
+			res.redirect("/error");
+		} else {
+			res.redirect("/page/"+p_id+"/subscribe")
+		}
+	})
+});
+
 // updating a main page checking for [[ ]]
 app.put("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
+	var page_title = req.body.title;
 	// still need to add history and not change a_id of original
 	if (req.body.p_body.indexOf("[[") != -1) {
 		var first = req.body.p_body.indexOf("[[");
@@ -251,8 +289,9 @@ app.put("/page/:p_id", function(req, res) {
 				    } else {
 				         db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("/error");
 							} else {
+								send_email(p_id, page_title, db);	
 								res.redirect("/table_of_contents");
 							}
 						});
@@ -266,16 +305,18 @@ app.put("/page/:p_id", function(req, res) {
 					if (total != undefined) {
 						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
+								send_email(p_id, page_title, db);
 								res.redirect("/table_of_contents");
 							}
 						});
 					} else {
 						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
+								send_email(p_id, page_title, db);
 								res.redirect("/table_of_contents");
 							}
 						});
@@ -286,8 +327,9 @@ app.put("/page/:p_id", function(req, res) {
 	} else {
 		db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
 			if (err) {
-				res.redirect("error.ejs");
+				res.redirect("/error");
 			} else {
+				send_email(p_id, page_title, db);
 				res.redirect("/table_of_contents");
 			}
 		});
@@ -325,7 +367,7 @@ app.post("/page/:p_id", function(req, res) {
 	db.get("SELECT id FROM authors WHERE name = ?;", a_name, function(err, rows) {
 		var a_id = rows.id;
 		if (err) {
-			res.redirect("error.ejs");
+			res.redirect("/error");
 		} else if (req.body.sub_body.indexOf("[[") != -1) {
 			var first = req.body.sub_body.indexOf("[[");
 			var second = req.body.sub_body.indexOf("]]");
@@ -343,7 +385,7 @@ app.post("/page/:p_id", function(req, res) {
 					    } else {
 					         db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
 								if (err) {
-									res.redirect("error.ejs");
+									res.redirect("/error");
 								} else {
 									res.redirect("/page/"+p_id);
 								}
@@ -358,7 +400,7 @@ app.post("/page/:p_id", function(req, res) {
 						if (total != undefined) {
 							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
 								if (err) {
-									res.redirect("error.ejs");
+									res.redirect("/error");
 								} else {
 									res.redirect("/page/"+p_id);
 								}
@@ -366,7 +408,7 @@ app.post("/page/:p_id", function(req, res) {
 						} else {
 							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
 								if (err) {
-									res.redirect("error.ejs");
+									res.redirect("/error");
 								} else {
 									res.redirect("/page/"+p_id);
 								}
@@ -378,7 +420,7 @@ app.post("/page/:p_id", function(req, res) {
 		} else {
 			db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
 				if (err) {
-					res.redirect("error.ejs");
+					res.redirect("/error");
 				} else {
 					res.redirect("/page/"+p_id);
 				}
@@ -423,9 +465,12 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 				    } else {
 				         db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
-								res.redirect("/page/"+p_id);
+								db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+									send_email(p_id, rows1.title, db);	
+									res.redirect("/page/"+p_id);
+								});
 							}
 						});
 				    }
@@ -438,17 +483,23 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 					if (total != undefined) {
 						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
-								res.redirect("/page/"+p_id);
+								db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+									send_email(p_id, rows1.title, db);	
+									res.redirect("/page/"+p_id);
+								});
 							}
 						});
 					} else {
 						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
 							if (err) {
-								res.redirect("error.ejs");
+								res.redirect("/error");
 							} else {
-								res.redirect("/page/"+p_id);
+								db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+									send_email(p_id, rows1.title, db);	
+									res.redirect("/page/"+p_id);
+								});
 							}
 						});
 					}
@@ -458,9 +509,12 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 	} else {
 		db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
 			if (err) {
-				res.redirect("error.ejs");
+				res.redirect("/error");
 			} else {
-				res.redirect("/page/"+p_id);
+				db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+					send_email(p_id, rows1.title, db);	
+					res.redirect("/page/"+p_id);
+				});
 			}
 		});
 	}
@@ -516,7 +570,7 @@ app.delete("/page/:p_id/discussion/:d_id/reply/:r_id", function(req, res){
 	var r_id = parseInt(req.params.r_id);
 	db.run("DELETE FROM replies WHERE id = ?;", r_id, function(err) {
 		if (err) {
-			res.redirect("error.ejs");
+			res.redirect("/error");
 		} else{
 			console.log("does it reach here?")
 			res.redirect("/page/"+p_id+"/discussions");
@@ -528,10 +582,10 @@ app.delete("/page/:p_id/discussion/:d_id/reply/:r_id", function(req, res){
 app.delete("/page/:p_id/discussion/:d_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var d_id = parseInt(req.params.d_id);
-	db.run("DELETE FROM discussions WHERE id = ?;", d_id, function(err) {
-		db.run("DELETE FROM replies WHERE d_id = ?;", d_id, function(err) {
+	db.run("DELETE FROM replies WHERE d_id = ?;", d_id, function(err) {
+		db.run("DELETE FROM discussions WHERE id = ?;", d_id, function(err) {
 			if (err) {
-				res.redirect("error.ejs");
+				res.redirect("/error");
 			} else {
 				res.redirect("/page/"+p_id+"/discussions");
 			}
@@ -548,7 +602,7 @@ app.delete("/page/:p_id", function(req, res) {
 				db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
 					db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
 						if (err) {
-							res.redirect("error.ejs"); 
+							res.redirect("/error"); 
 						} else {
 							res.redirect("/table_of_contents");
 						}
@@ -566,7 +620,7 @@ app.delete("/page/:p_id/section/:s_id", function(req, res) {
 	var s_id = parseInt(req.params.s_id);
 	db.run("DELETE FROM sections WHERE id = ?;", s_id, function(err) {
 		if (err) {
-			res.redirect("error.ejs"); 
+			res.redirect("/error"); 
 		} else {
 			res.redirect("/page/"+p_id);
 		}
@@ -575,17 +629,17 @@ app.delete("/page/:p_id/section/:s_id", function(req, res) {
 
 // in case they try to go somewhere else
 app.get("/:somethingelse", function(req, res) {
-	res.redirect("error.ejs");
+	res.redirect("/error");
 });
 
 // in case they try to go somewhere else
 app.get("/:somethingelse/:somewhereElse", function(req, res) {
-	res.redirect("error.ejs");
+	res.redirect("/error");
 });
 
 // in case they try to go somewhere else
 app.get("/:somethingelse/:somewhereElse/:somewhereOther", function(req, res) {
-	res.redirect("error.ejs");
+	res.redirect("/error");
 });
 
 

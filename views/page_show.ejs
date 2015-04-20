@@ -27,6 +27,12 @@
 	<br><br><br>
 	<a href="/page/<%= page.id %>/sections/new">Add Another Section</a>
 	<br><br><br>
+	Want to stay posted about changes to this page?<br>
+	<form action="/page/<%= page.id %>/subscribe/add" method="POST">
+	<input type="text" name="subscribe" placeholder="your email" required>
+	<button>Subscribe</button>
+	</form>
+	<br><br><br>
 </div>
 </body>
 </html>

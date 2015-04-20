@@ -50,6 +50,7 @@
 	padding-top: 10px;
 	padding-left: 20px;
 	float: left;
+	border-left: rgb(0, 128, 255) solid 1px;
 }
 .content img {
 	float: right;
@@ -64,4 +65,3 @@
 }
 
 
-/*Need to get the content width to be relative and the height of panel to be entire side of page*/

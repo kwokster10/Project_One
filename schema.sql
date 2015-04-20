@@ -59,7 +59,8 @@ CREATE TABLE history (
 	s_id INTEGER,
 	a_id INTEGER,
 	old_body TEXT,
-	updated_on TEXT
+	updated_on TEXT,
+	created_on TEXT
 );
 
 DROP TABLE IF EXISTS subscribers;
