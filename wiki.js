@@ -25,6 +25,8 @@ app.use(express.static(__dirname+"/public"));
 // module for marked down files to become html
 var marked = require("marked");
 
+// error image
+var error = "http://media.giphy.com/media/EFyAyqmMZgwvK/giphy.gif";
 
 // redirecting to my homepage
 app.get("/", function(req, res) {
@@ -70,7 +72,7 @@ app.post("/authors", function(req, res) {
 			var not_unique = "That name is taken!"
 			res.render("author_new.ejs", {a_name: a_name, bio: bio, not_unique: not_unique});
 		} else {
-			db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name, bio, function(err) {
+			db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name.trim(), bio, function(err) {
 				if (err) {
 					throw err;
 				} else {
@@ -103,7 +105,7 @@ app.get("/author/:a_id/edit", function(req, res) {
 // updating the specific author 
 app.put("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
-	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id =?;", a_id, req.body.name, req.body.bio, function(err) {
+	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id =?;", req.body.name.trim(), req.body.bio, a_id, function(err) {
 		if (err) {
 			throw err;
 		} else {
@@ -126,14 +128,70 @@ app.get("/pages/new", function(req, res) {
 	});
 });
 
-// inserting into the contents table to add a new page 
+// inserting into the contents table to add a new page accounting for [[ ]] notation
 app.post("/table_of_contents", function(req, res) {
 	var title = req.body.title;
 	var p_body = req.body.p_body;
 	var a_id = req.body.a_id;
-	db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, p_body, a_id, function(err) {
-		res.redirect("/table_of_contents");
-	});
+	if (req.body.p_body.indexOf("[[") != -1) {
+		var first = req.body.p_body.indexOf("[[");
+		var second = req.body.p_body.indexOf("]]");
+		replacer(req.body.p_body, first, db);
+		var total;
+		function replacer(string, start, db) {
+		    var substr = string.substr(start+2, second-start-2);
+		    db.get("SELECT id FROM pages WHERE title = ?;", substr, function(err, rows) {
+		    	if (rows != undefined) {
+				    var ahref = "["+substr+"](/page/"+rows.id+")";
+				    total = string.slice(0, start) + ahref + string.slice(second+2, string.length);
+				    if (total.indexOf("[[", first+2) != -1) {
+				    	first = total.indexOf("[[", first+2)
+				    	second = total.indexOf("]]", second+2);
+				        replacer(total, total.indexOf("[[", first), db);
+				    } else {
+				         db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
+				    }
+				// was trying to get it to skip any misspellings, but this doesn't work
+				} else if (total != undefined && total.indexOf("[[", first+2) !== -1) {
+					first = total.indexOf("[[", first+2);
+					second = total.indexOf("]]", second+2);
+				    replacer(total, first, db);
+				} else {
+					if (total != undefined) {
+						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
+					} else {
+						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
+					}
+				}
+		    });
+		};	
+	} else {
+		db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
+			if (err) {
+				throw err;
+			} else {
+				res.redirect("/table_of_contents");
+			}
+		});
+	}
 });
 
 // rendering main page edit page
@@ -146,17 +204,69 @@ app.get("/page/:p_id/edit", function(req, res) {
 	});
 });
 
-// updating a main page
+// updating a main page checking for [[ ]]
 app.put("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	// still need to add history and not change a_id of original 
-	db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title, req.body.p_body, req.body.a_id, p_id, function(err) {
-		if (err) {
-			throw err;
-		} else {
-			res.redirect("/table_of_contents");
-		}
-	});
+	// still need to add history and not change a_id of original
+	if (req.body.p_body.indexOf("[[") != -1) {
+		var first = req.body.p_body.indexOf("[[");
+		var second = req.body.p_body.indexOf("]]");
+		replacer(req.body.p_body, first, db);
+		var total;
+		function replacer(string, start, db) {
+		    var substr = string.substr(start+2, second-start-2);
+		    db.get("SELECT id FROM pages WHERE title = ?;", substr, function(err, rows) {
+		    	if (rows != undefined) {
+				    var ahref = "["+substr+"](/page/"+rows.id+")";
+				    total = string.slice(0, start) + ahref + string.slice(second+2, string.length);
+				    if (total.indexOf("[[", first+2) != -1) {
+				    	first = total.indexOf("[[", first+2)
+				    	second = total.indexOf("]]", second+2);
+				        replacer(total, total.indexOf("[[", first), db);
+				    } else {
+				         db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
+				    }
+				// was trying to get it to skip any misspellings, but this doesn't work
+				} else if (total != undefined && total.indexOf("[[", first+2) !== -1) {
+					first = total.indexOf("[[", first+2);
+					second = total.indexOf("]]", second+2);
+				    replacer(total, first, db);
+				} else {
+					if (total != undefined) {
+						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
+					} else {
+						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
+					}
+				}
+		    });
+		};	
+	} else {
+		db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
+			if (err) {
+				throw err;
+			} else {
+				res.redirect("/table_of_contents");
+			}
+		});
+	}
 });
 
 // form to put a section to a page
@@ -183,15 +293,72 @@ app.get("/page/:p_id", function(req, res) {
 	});
 });
 
-// adding a section of a page to the database
+// adding a section of a page to the database checking for [[ ]]
 app.post("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var a_name = req.body.author_name;
 	db.get("SELECT id FROM authors WHERE name = ?;", a_name, function(err, rows) {
 		var a_id = rows.id;
-		db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
-			res.redirect("/page/"+p_id);
-		});
+		if (err) {
+			throw err;
+		} else if (req.body.sub_body.indexOf("[[") != -1) {
+			var first = req.body.sub_body.indexOf("[[");
+			var second = req.body.sub_body.indexOf("]]");
+			replacer(req.body.sub_body, first, db);
+			function replacer(string, start, db) {
+			    var substr = string.substr(start+2, second-start-2);
+			    db.get("SELECT id FROM pages WHERE title = ?;", substr, function(err, rows) {
+			    	if (rows != undefined) {
+					    var ahref = "["+substr+"](/page/"+rows.id+")";
+					    total = string.slice(0, start) + ahref + string.slice(second+2, string.length);
+					    if (total.indexOf("[[", first+2) != -1) {
+					    	first = total.indexOf("[[", first+2)
+					    	second = total.indexOf("]]", second+2);
+					        replacer(total, total.indexOf("[[", first), db);
+					    } else {
+					         db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
+								if (err) {
+									throw err;
+								} else {
+									res.redirect("/page/"+p_id);
+								}
+							});
+					    }
+					// was trying to get it to skip any misspellings, but this doesn't work
+					} else if (total != undefined && total.indexOf("[[", first+2) !== -1) {
+						first = total.indexOf("[[", first+2);
+						second = total.indexOf("]]", second+2);
+					    replacer(total, first, db);
+					} else {
+						if (total != undefined) {
+							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
+								if (err) {
+									throw err;
+								} else {
+									res.redirect("/page/"+p_id);
+								}
+							});
+						} else {
+							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
+								if (err) {
+									throw err;
+								} else {
+									res.redirect("/page/"+p_id);
+								}
+							});
+						}
+					}
+			    });
+			};	
+		} else {
+			db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
+				if (err) {
+					throw err;
+				} else {
+					res.redirect("/page/"+p_id);
+				}
+			});
+		}
 	});
 });
 
@@ -208,19 +375,70 @@ app.get("/page/:p_id/section/:s_id/edit", function(req, res) {
 	});
 });
 
-// editing a section and updating the database
+// editing a section and updating the database checking for [[ ]]
 app.put("/page/:p_id/section/:s_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var s_id = parseInt(req.params.s_id);
 	var a_id = req.body.a_id;
 	// still need to add history and not change a_id of original 
-	db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
-		if (err) {
-			throw err;
-		} else {
-			res.redirect("/page/"+p_id);
-		}
-	});
+	if (req.body.sub_body.indexOf("[[") != -1) {
+		var first = req.body.sub_body.indexOf("[[");
+		var second = req.body.sub_body.indexOf("]]");
+		replacer(req.body.sub_body, first, db);
+		function replacer(string, start, db) {
+		    var substr = string.substr(start+2, second-start-2);
+		    db.get("SELECT id FROM pages WHERE title = ?;", substr, function(err, rows) {
+		    	if (rows != undefined) {
+				    var ahref = "["+substr+"](/page/"+rows.id+")";
+				    total = string.slice(0, start) + ahref + string.slice(second+2, string.length);
+				    if (total.indexOf("[[", first+2) != -1) {
+				    	first = total.indexOf("[[", first+2)
+				    	second = total.indexOf("]]", second+2);
+				        replacer(total, total.indexOf("[[", first), db);
+				    } else {
+				         db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/page/"+p_id);
+							}
+						});
+				    }
+				// was trying to get it to skip any misspellings, but this doesn't work
+				} else if (total != undefined && total.indexOf("[[", first+2) !== -1) {
+					first = total.indexOf("[[", first+2);
+					second = total.indexOf("]]", second+2);
+				    replacer(total, first, db);
+				} else {
+					if (total != undefined) {
+						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/page/"+p_id);
+							}
+						});
+					} else {
+						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
+							if (err) {
+								throw err;
+							} else {
+								res.redirect("/page/"+p_id);
+							}
+						});
+					}
+				}
+		    });
+		};	
+	} else {
+		db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
+			if (err) {
+				throw err;
+			} else {
+				res.redirect("/page/"+p_id);
+			}
+		});
+	}
 });
 
 // the discussion form 
@@ -243,7 +461,6 @@ app.get("/page/:p_id/discussions", function(req, res) {
 				rows2.map(function(obj1) {
 					obj1.r_body = marked(obj1.r_body);
 				}); 
-				console.log(rows2);
 				res.render("discussion_show.ejs", {page: rows, discussions: rows1, replies: rows2});
 			});
 		});
@@ -297,17 +514,24 @@ app.delete("/page/:p_id/discussion/:d_id", function(req, res) {
 	});
 });
 
-// delete a page which deletes all of it's articles
+// delete a page which deletes all of it's articles, discussions and replies
 app.delete("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	db.run("DELETE FROM pages WHERE id = ?;", p_id, function(err) {
 		db.run("DELETE FROM sections WHERE p_id = ?;", p_id, function(err) {
-			if (err) {
-				throw err; 
-			} else {
-				res.redirect("/table_of_contents");
-			}
+			db.get("SELECT id FROM discussions WHERE p_id = ?;", p_id, function(err, rows) {
+				db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
+					db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
+						if (err) {
+							throw err; 
+						} else {
+							res.redirect("/table_of_contents");
+						}
+					});
+				});
+			});
 		});
+		
 	});
 });
 

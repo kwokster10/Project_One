@@ -29,7 +29,6 @@
 			<li>
 			<small>replied on <%= replies[i].created_at %> by <%= replies[i].r_name %></small>
 			</li>
-			<%= JSON.stringify(replies[i]) %>
 			<form method="POST" action="/page/<%= page.id %>/discussion/<%= obj.id %>/reply/<%= replies[i].id %>?_method=DELETE">
 			<button>Delete</button>
 			</form>
@@ -40,7 +39,7 @@
 		<label>Your name:  </label>
 		<input type="text" name="r_name" placeholder="your name" required><br>
 		Post a reply<br>
-		<textarea name="r_body" rows=5 cols=60 required></textarea>
+		<textarea name="r_body" rows=3 cols=60 required></textarea>
 		<button>Reply</button>
 	</form>
 	<% });  %>
