@@ -20,6 +20,17 @@
 #panel a:hover, .top a:hover, .content a:hover {
 	color: grey;
 }
+#panel img {
+	border-radius: 10px;
+}
+#panel h4 {
+	text-align: justify;
+	padding-left: 8px;
+}
+#panel h3 {
+	text-align: justify;
+	padding-left: 25px;
+}
 .top a, .content a {
 	text-decoration: none;
 	color: blue;
@@ -31,10 +42,12 @@
 .top li {
 	padding: 10px;
 	font-size: 15px;
+	text-decoration: none;
+	display: inline-block;
 }
 .content {
-	width: 700px;
-	padding-top: 70px;
+	width: 800px;
+	padding-top: 10px;
 	padding-left: 20px;
 	float: left;
 }

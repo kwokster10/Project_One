@@ -43,11 +43,21 @@ app.get("/how_to_edit", function(req, res) {
 	res.render("how_to.ejs");
 });
 
+app.get("/error", function(req, res) {
+	res.render("error.ejs");
+});
+
 // if they wanted to search the site for titles 
 app.get("/search", function(req, res) {
-	db.all("SELECT * FROM pages", function(err, rows) {
-		// search through the titles with match and send the matches to /search page
-
+	var keyword = req.query.search.toUpperCase();
+	db.all("SELECT * FROM pages WHERE title like '%"+keyword+"%';", function(err, rows) {
+		db.all("SELECT * FROM sections WHERE subtitle like '%"+keyword+"%';", function(err, rows1) {
+			db.all("SELECT * FROM pages WHERE body like '%"+keyword+"%';", function(err, rows2) {
+				db.all("SELECT * FROM sections WHERE sub_body like '%"+keyword+"%';", function(err, rows3) {
+					res.render("search.ejs", {search: keyword.toLowerCase(), pages: rows, sections: rows1, page_body: rows2, section_body: rows3});
+				});
+			});
+		});
 	});
 });
 
@@ -74,7 +84,7 @@ app.post("/authors", function(req, res) {
 		} else {
 			db.run("INSERT INTO authors (name, bio) VALUES (?, ?);", a_name.trim(), bio, function(err) {
 				if (err) {
-					throw err;
+					res.redirect("error.ejs");
 				} else {
 					res.redirect("/authors");
 				}
@@ -107,7 +117,7 @@ app.put("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
 	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id =?;", req.body.name.trim(), req.body.bio, a_id, function(err) {
 		if (err) {
-			throw err;
+			res.redirect("error.ejs");
 		} else {
 			res.redirect("/authors");
 		}
@@ -151,7 +161,7 @@ app.post("/table_of_contents", function(req, res) {
 				    } else {
 				         db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -166,7 +176,7 @@ app.post("/table_of_contents", function(req, res) {
 					if (total != undefined) {
 						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -174,7 +184,7 @@ app.post("/table_of_contents", function(req, res) {
 					} else {
 						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -186,7 +196,7 @@ app.post("/table_of_contents", function(req, res) {
 	} else {
 		db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
 			if (err) {
-				throw err;
+				res.redirect("error.ejs");
 			} else {
 				res.redirect("/table_of_contents");
 			}
@@ -241,7 +251,7 @@ app.put("/page/:p_id", function(req, res) {
 					if (total != undefined) {
 						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -249,7 +259,7 @@ app.put("/page/:p_id", function(req, res) {
 					} else {
 						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/table_of_contents");
 							}
@@ -261,7 +271,7 @@ app.put("/page/:p_id", function(req, res) {
 	} else {
 		db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
 			if (err) {
-				throw err;
+				res.redirect("error.ejs");
 			} else {
 				res.redirect("/table_of_contents");
 			}
@@ -300,7 +310,7 @@ app.post("/page/:p_id", function(req, res) {
 	db.get("SELECT id FROM authors WHERE name = ?;", a_name, function(err, rows) {
 		var a_id = rows.id;
 		if (err) {
-			throw err;
+			res.redirect("error.ejs");
 		} else if (req.body.sub_body.indexOf("[[") != -1) {
 			var first = req.body.sub_body.indexOf("[[");
 			var second = req.body.sub_body.indexOf("]]");
@@ -318,7 +328,7 @@ app.post("/page/:p_id", function(req, res) {
 					    } else {
 					         db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
 								if (err) {
-									throw err;
+									res.redirect("error.ejs");
 								} else {
 									res.redirect("/page/"+p_id);
 								}
@@ -333,7 +343,7 @@ app.post("/page/:p_id", function(req, res) {
 						if (total != undefined) {
 							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
 								if (err) {
-									throw err;
+									res.redirect("error.ejs");
 								} else {
 									res.redirect("/page/"+p_id);
 								}
@@ -341,7 +351,7 @@ app.post("/page/:p_id", function(req, res) {
 						} else {
 							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
 								if (err) {
-									throw err;
+									res.redirect("error.ejs");
 								} else {
 									res.redirect("/page/"+p_id);
 								}
@@ -353,7 +363,7 @@ app.post("/page/:p_id", function(req, res) {
 		} else {
 			db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
 				if (err) {
-					throw err;
+					res.redirect("error.ejs");
 				} else {
 					res.redirect("/page/"+p_id);
 				}
@@ -398,7 +408,7 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 				    } else {
 				         db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/page/"+p_id);
 							}
@@ -413,7 +423,7 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 					if (total != undefined) {
 						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/page/"+p_id);
 							}
@@ -421,7 +431,7 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 					} else {
 						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
 							if (err) {
-								throw err;
+								res.redirect("error.ejs");
 							} else {
 								res.redirect("/page/"+p_id);
 							}
@@ -433,7 +443,7 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 	} else {
 		db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
 			if (err) {
-				throw err;
+				res.redirect("error.ejs");
 			} else {
 				res.redirect("/page/"+p_id);
 			}
@@ -491,7 +501,7 @@ app.delete("/page/:p_id/discussion/:d_id/reply/:r_id", function(req, res){
 	var r_id = parseInt(req.params.r_id);
 	db.run("DELETE FROM replies WHERE id = ?;", r_id, function(err) {
 		if (err) {
-			throw err;
+			res.redirect("error.ejs");
 		} else{
 			console.log("does it reach here?")
 			res.redirect("/page/"+p_id+"/discussions");
@@ -506,7 +516,7 @@ app.delete("/page/:p_id/discussion/:d_id", function(req, res) {
 	db.run("DELETE FROM discussions WHERE id = ?;", d_id, function(err) {
 		db.run("DELETE FROM replies WHERE d_id = ?;", d_id, function(err) {
 			if (err) {
-				throw err;
+				res.redirect("error.ejs");
 			} else {
 				res.redirect("/page/"+p_id+"/discussions");
 			}
@@ -523,7 +533,7 @@ app.delete("/page/:p_id", function(req, res) {
 				db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
 					db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
 						if (err) {
-							throw err; 
+							res.redirect("error.ejs"); 
 						} else {
 							res.redirect("/table_of_contents");
 						}
@@ -541,12 +551,28 @@ app.delete("/page/:p_id/section/:s_id", function(req, res) {
 	var s_id = parseInt(req.params.s_id);
 	db.run("DELETE FROM sections WHERE id = ?;", s_id, function(err) {
 		if (err) {
-			throw err; 
+			res.redirect("error.ejs"); 
 		} else {
 			res.redirect("/page/"+p_id);
 		}
 	});
 });
+
+// in case they try to go somewhere else
+app.get("/:somethingelse", function(req, res) {
+	res.redirect("error.ejs");
+});
+
+// in case they try to go somewhere else
+app.get("/:somethingelse/:somewhereElse", function(req, res) {
+	res.redirect("error.ejs");
+});
+
+// in case they try to go somewhere else
+app.get("/:somethingelse/:somewhereElse/:somewhereOther", function(req, res) {
+	res.redirect("error.ejs");
+});
+
 
 // making the server listen on port 3000
 app.listen(3000);

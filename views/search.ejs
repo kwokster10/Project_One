@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<meta charset="UTF-8">
+	<title>Search</title>
+</head>
+
+<% include head %>
+
+<div class="content">
+	<h1><%= search.toUpperCase() %> Search Results</h1>
+	'<%= search %>' was found in these pages: <br><br>
+	 
+	<% if (pages.length > 0) { %>
+	<strong>In Page Titles:</strong>
+		<% for(var i = 0; i < pages.length; i++) { %>
+
+		<li><a href="/page/<%= pages[i].id %>"><%= pages[i].title %></a></li><br>
+	<% }} %>
+	
+	<% if (sections.length > 0) { %>
+		<strong>In Subtitles:</strong>
+		 <% for(var i = 0; i < sections.length; i++) { %>
+	<% var index1 = section_body[i].sub_body.indexOf(search) %>
+		<li><a href="/page/<%= sections[i].p_id %>"><%= sections[i].subtitle %></a><%= sections[i].sub_body.substr(index1, 100) %></li><br>
+	<% }} %>
+
+	<% if (page_body.length > 0) { %>
+		<strong>In Bodies of Pages:</strong>
+		<% for(var i = 0; i < page_body.length; i++) { %>
+	<% var index = page_body[i].body.indexOf(search) %>
+		<li><a href="/page/<%= page_body[i].id %>"><%= page_body[i].title %></a> : <%= page_body[i].body.substr(index, 100) %></li><br>
+	<% }} %>
+
+	<% if (section_body.length > 0) { %>
+		<strong>In Bodies of Sections of Pages:</strong>
+		<% for(var i = 0; i < section_body.length; i++) { %>
+	<% var index1 = section_body[i].sub_body.indexOf(search) %>
+		<li><a href="/page/<%= section_body[i].p_id %>"><%= section_body[i].subtitle %></a> : <%= section_body[i].sub_body.substr(index1, 100) %></li><br>
+	<% }} %>
+	<br>
+</div>
+</body>
+</html>
