@@ -204,6 +204,12 @@ app.post("/table_of_contents", function(req, res) {
 				        replacer(total, total.indexOf("[[", first), db);
 				    } else {
 				         db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, total, a_id, function(err) {
+				         	if (err) {
+								res.redirect("/error");
+							}
+						});
+						db.get("SELECT id FROM pages WHERE title = ?;", title, function(err, rows) {
+							var p_id = rows.id;
 				         	db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
 				         		var a_name = rows2.name;
 				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title, a_id, a_name, total, getTimeStamp(), function(err) {
@@ -224,6 +230,12 @@ app.post("/table_of_contents", function(req, res) {
 				} else {
 					if (total != undefined) {
 						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, total, a_id, function(err) {
+							if (err) {
+								res.redirect("/error");
+							}
+						});
+						db.get("SELECT id FROM pages WHERE title = ?;", title, function(err, rows) {
+							var p_id = rows.id;
 							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
 				         		var a_name = rows2.name;
 				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title, a_id, a_name, total, getTimeStamp(), function(err) {
@@ -237,6 +249,12 @@ app.post("/table_of_contents", function(req, res) {
 						});
 					} else {
 						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, p_body, a_id, function(err) {
+							if (err) {
+								res.redirect("/error");
+							}
+						});
+						db.get("SELECT id FROM pages WHERE title = ?;", title, function(err, rows) {
+							var p_id = rows.id;
 							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
 				         		var a_name = rows2.name;
 				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title, a_id, a_name, p_body, getTimeStamp(), function(err) {
@@ -666,27 +684,27 @@ app.get("/page/:p_id/discussions", function(req, res) {
 // site history
 app.get("/main/history", function(req, res) {
 	db.all("SELECT * FROM history;", function(err, rows) {
+		console.log(rows);
 		res.render("history_index.ejs", {history: rows})
+	});
+});
+
+// each page history
+app.get("/page/:p_id/history/:h_id", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	var h_id = parseInt(req.params.h_id);
+	db.get("SELECT * FROM history WHERE id = ?;", h_id, function(err, rows) {
+		var marked_old_body = marked(rows.old_body);
+		res.render("history_page.ejs", {history: rows, body: marked_old_body});
 	});
 });
 
 // total page history
 app.get("/page/:p_id/history", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	db.all("SELECT * FROM history WHERE p_id = ?;", function(err, rows) {
+	db.all("SELECT * FROM history WHERE p_id = ?;", p_id, function(err, rows) {
+		console.log(rows);
 		res.render("history_show.ejs", {history: rows});
-	});
-});
-
-// each page history
-app.get("/page/:p_id/history/:h.id", function(req, res) {
-	var p_id = parseInt(req.params.p_id);
-	var h_id = parseInt(req.params.h_id);
-	db.get("SELECT * FROM history WHERE id = ?;", function(err, rows) {
-		rows.map(function(obj) {
-			obj.old_body = marked(obj.old_body);
-		});
-		res.render("history_page.ejs", {history: rows});
 	});
 });
 
