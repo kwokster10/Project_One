@@ -19,6 +19,7 @@
 			<% } %>
 		</select><br><br>
 		<input type="text" name="subtitle" value="<%= section.subtitle %>" required><br>
+		<input type="hidden" name="page_title" value="<%= page.title %>">
 		<br>
 		Information relating to section title:<br>-Fill this out in markdown format-<br>
 		<textarea name="sub_body" rows=20 cols=60 required><%= section.sub_body %></textarea>

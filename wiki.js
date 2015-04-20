@@ -57,6 +57,21 @@ var send_email = function(p_id, page_title, db) {
 	});	
 };
 
+// timestamp function
+function getTimeStamp() {
+    var now = new Date();
+    return ((now.getMonth() + 1) + '/' +
+            (now.getDate()) + '/' +
+             now.getFullYear() + " " +
+             now.getHours() + ':' +
+             ((now.getMinutes() < 10)
+                 ? ("0" + now.getMinutes())
+                 : (now.getMinutes())) + ':' +
+             ((now.getSeconds() < 10)
+                 ? ("0" + now.getSeconds())
+                 : (now.getSeconds())));
+};
+
 // redirecting to my homepage
 app.get("/", function(req, res) {
 	res.redirect("/main");
@@ -169,7 +184,7 @@ app.get("/pages/new", function(req, res) {
 
 // inserting into the contents table to add a new page accounting for [[ ]] notation
 app.post("/table_of_contents", function(req, res) {
-	var title = req.body.title;
+	var title = req.body.title.trim();
 	var p_body = req.body.p_body;
 	var a_id = req.body.a_id;
 	if (req.body.p_body.indexOf("[[") != -1) {
@@ -188,12 +203,17 @@ app.post("/table_of_contents", function(req, res) {
 				    	second = total.indexOf("]]", second+2);
 				        replacer(total, total.indexOf("[[", first), db);
 				    } else {
-				         db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								res.redirect("/table_of_contents");
-							}
+				         db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, total, a_id, function(err) {
+				         	db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title, a_id, a_name, total, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										res.redirect("/table_of_contents");
+									}
+								});
+				         	});
 						});
 				    }
 				// was trying to get it to skip any misspellings, but this doesn't work
@@ -203,33 +223,54 @@ app.post("/table_of_contents", function(req, res) {
 				    replacer(total, first, db);
 				} else {
 					if (total != undefined) {
-						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), total, a_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								res.redirect("/table_of_contents");
-							}
+						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, total, a_id, function(err) {
+							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title, a_id, a_name, total, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										res.redirect("/table_of_contents");
+									}
+								});
+				         	});
 						});
 					} else {
-						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								res.redirect("/table_of_contents");
-							}
+						db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, p_body, a_id, function(err) {
+							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title, a_id, a_name, p_body, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										res.redirect("/table_of_contents");
+									}
+								});
+				         	});
 						});
 					}
 				}
 		    });
 		};	
 	} else {
-		db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title.trim(), p_body, a_id, function(err) {
+		db.run("INSERT INTO pages (title, body, a_id) VALUES (?, ?, ?);", title, p_body, a_id, function(err) {
 			if (err) {
 				res.redirect("/error");
-			} else {
-				res.redirect("/table_of_contents");
 			}
 		});
+		db.get("SELECT id FROM pages WHERE title = ?;", title, function(err, rows) {
+			var p_id = rows.id;
+			db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+	     		var a_name = rows2.name;
+	     		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, title.trim(), a_id, a_name, p_body, getTimeStamp(), function(err) {
+					if (err) {
+						res.redirect("/error");
+					} else {
+						res.redirect("/table_of_contents");
+					}
+				});
+	     	});
+	    });
 	}
 });
 
@@ -270,6 +311,7 @@ app.post("/page/:p_id/subscribe/add", function(req, res) {
 app.put("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var page_title = req.body.title;
+	var a_id = req.body.a_id;
 	// still need to add history and not change a_id of original
 	if (req.body.p_body.indexOf("[[") != -1) {
 		var first = req.body.p_body.indexOf("[[");
@@ -287,13 +329,18 @@ app.put("/page/:p_id", function(req, res) {
 				    	second = total.indexOf("]]", second+2);
 				        replacer(total, total.indexOf("[[", first), db);
 				    } else {
-				         db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								send_email(p_id, page_title, db);	
-								res.redirect("/table_of_contents");
-							}
+				         db.run("UPDATE pages SET title = ?, body = ? WHERE id = ?;", req.body.title.trim(), total, p_id, function(err) {
+				         	db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+				         		db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, req.body.title.trim(), a_id, a_name, total, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										send_email(p_id, page_title, db);	
+										res.redirect("/table_of_contents");
+									}
+								});
+				         	});
 						});
 				    }
 				// was trying to get it to skip any misspellings, but this doesn't work
@@ -303,35 +350,50 @@ app.put("/page/:p_id", function(req, res) {
 				    replacer(total, first, db);
 				} else {
 					if (total != undefined) {
-						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), total, req.body.a_id, p_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								send_email(p_id, page_title, db);
-								res.redirect("/table_of_contents");
-							}
+						db.run("UPDATE pages SET title = ?, body = ? WHERE id = ?;", req.body.title.trim(), total, p_id, function(err) {
+							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+								db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, req.body.title.trim(), a_id, a_name, total, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										send_email(p_id, page_title, db);	
+										res.redirect("/table_of_contents");
+									}
+								});
+							});
 						});
 					} else {
-						db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								send_email(p_id, page_title, db);
-								res.redirect("/table_of_contents");
-							}
+						db.run("UPDATE pages SET title = ?, body = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, p_id, function(err) {
+							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+								db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, req.body.title.trim(), a_id, a_name, req.body.p_body, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										send_email(p_id, page_title, db);	
+										res.redirect("/table_of_contents");
+									}
+								});
+							});
 						});
 					}
 				}
 		    });
 		};	
 	} else {
-		db.run("UPDATE pages SET title = ?, body = ?, a_id = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, req.body.a_id, p_id, function(err) {
-			if (err) {
-				res.redirect("/error");
-			} else {
-				send_email(p_id, page_title, db);
-				res.redirect("/table_of_contents");
-			}
+		db.run("UPDATE pages SET title = ?, body = ? WHERE id = ?;", req.body.title.trim(), req.body.p_body, p_id, function(err) {
+			db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				var a_name = rows2.name;
+				db.run("INSERT INTO history (p_id, p_title, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?);", p_id, req.body.title.trim(), a_id, a_name, req.body.p_body, getTimeStamp(), function(err) {
+					if (err) {
+						res.redirect("/error");
+					} else {
+						send_email(p_id, page_title, db);	
+						res.redirect("/table_of_contents");
+					}
+				});
+			});
 		});
 	}
 });
@@ -364,6 +426,7 @@ app.get("/page/:p_id", function(req, res) {
 app.post("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var a_name = req.body.author_name;
+	var page_title = req.body.page_title.trim();
 	db.get("SELECT id FROM authors WHERE name = ?;", a_name, function(err, rows) {
 		var a_id = rows.id;
 		if (err) {
@@ -384,11 +447,19 @@ app.post("/page/:p_id", function(req, res) {
 					        replacer(total, total.indexOf("[[", first), db);
 					    } else {
 					         db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
-								if (err) {
-									res.redirect("/error");
-								} else {
-									res.redirect("/page/"+p_id);
-								}
+					         	db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+				         		var a_name = rows2.name;
+						         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, total, getTimeStamp(), function(err) {
+										if (err) {
+											res.redirect("/error");
+										} else {
+											db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+												send_email(p_id, rows1.title, db);	
+												res.redirect("/page/"+p_id);
+											});
+										}
+									});
+						        });
 							});
 					    }
 					// was trying to get it to skip any misspellings, but this doesn't work
@@ -399,19 +470,35 @@ app.post("/page/:p_id", function(req, res) {
 					} else {
 						if (total != undefined) {
 							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, total, p_id, a_id, function(err) {
-								if (err) {
-									res.redirect("/error");
-								} else {
-									res.redirect("/page/"+p_id);
-								}
+								db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+					         		var a_name = rows2.name;
+						         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, total, getTimeStamp(), function(err) {
+										if (err) {
+										res.redirect("/error");
+										} else {
+											db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+												send_email(p_id, rows1.title, db);	
+												res.redirect("/page/"+p_id);
+											});
+										}
+									});
+					         	});
 							});
 						} else {
 							db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
-								if (err) {
-									res.redirect("/error");
-								} else {
-									res.redirect("/page/"+p_id);
-								}
+								db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+					         		var a_name = rows2.name;
+						         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, req.body.sub_body, getTimeStamp(), function(err) {
+										if (err) {
+										res.redirect("/error");
+										} else {
+											db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+												send_email(p_id, rows1.title, db);	
+												res.redirect("/page/"+p_id);
+											});
+										}
+									});
+					         	});
 							});
 						}
 					}
@@ -419,11 +506,19 @@ app.post("/page/:p_id", function(req, res) {
 			};	
 		} else {
 			db.run("INSERT INTO sections (subtitle, sub_body, p_id, a_id) VALUES (?, ?, ?, ?);", req.body.subtitle, req.body.sub_body, p_id, a_id, function(err) {
-				if (err) {
-					res.redirect("/error");
-				} else {
-					res.redirect("/page/"+p_id);
-				}
+				db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+	         		var a_name = rows2.name;
+		         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, created_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, req.body.sub_body, getTimeStamp(), function(err) {
+						if (err) {
+						res.redirect("/error");
+						} else {
+							db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+								send_email(p_id, rows1.title, db);	
+								res.redirect("/page/"+p_id);
+							});
+						}
+					});
+	         	});
 			});
 		}
 	});
@@ -447,6 +542,7 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var s_id = parseInt(req.params.s_id);
 	var a_id = req.body.a_id;
+	var page_title = req.body.page_title.trim();
 	// still need to add history and not change a_id of original 
 	if (req.body.sub_body.indexOf("[[") != -1) {
 		var first = req.body.sub_body.indexOf("[[");
@@ -463,15 +559,21 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 				    	second = total.indexOf("]]", second+2);
 				        replacer(total, total.indexOf("[[", first), db);
 				    } else {
-				         db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
-									send_email(p_id, rows1.title, db);	
-									res.redirect("/page/"+p_id);
+				         db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, s_id, function(err) {
+				         	db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+					         	var a_name = rows2.name;
+					         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, total, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+											send_email(p_id, rows1.title, db);	
+											res.redirect("/page/"+p_id);
+										});
+									}
 								});
-							}
+				         	});
+							
 						});
 				    }
 				// was trying to get it to skip any misspellings, but this doesn't work
@@ -481,41 +583,56 @@ app.put("/page/:p_id/section/:s_id", function(req, res) {
 				    replacer(total, first, db);
 				} else {
 					if (total != undefined) {
-						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, a_id, s_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
-									send_email(p_id, rows1.title, db);	
-									res.redirect("/page/"+p_id);
+						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ? WHERE id = ?;", req.body.subtitle, total, p_id, s_id, function(err) {
+							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+					         	var a_name = rows2.name;
+					         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, total, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+											send_email(p_id, rows1.title, db);	
+											res.redirect("/page/"+p_id);
+										});
+									}
 								});
-							}
+				         	});
 						});
 					} else {
-						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
-							if (err) {
-								res.redirect("/error");
-							} else {
-								db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
-									send_email(p_id, rows1.title, db);	
-									res.redirect("/page/"+p_id);
+						db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, s_id, function(err) {
+							db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+					         	var a_name = rows2.name;
+					         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, req.body.sub_body, getTimeStamp(), function(err) {
+									if (err) {
+										res.redirect("/error");
+									} else {
+										db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+											send_email(p_id, rows1.title, db);	
+											res.redirect("/page/"+p_id);
+										});
+									}
 								});
-							}
+				         	});
 						});
 					}
 				}
 		    });
 		};	
 	} else {
-		db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ?, a_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, a_id, s_id, function(err) {
-			if (err) {
-				res.redirect("/error");
-			} else {
-				db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
-					send_email(p_id, rows1.title, db);	
-					res.redirect("/page/"+p_id);
+		db.run("UPDATE sections SET subtitle = ?, sub_body = ?, p_id = ? WHERE id = ?;", req.body.subtitle, req.body.sub_body, p_id, s_id, function(err) {
+			db.get("SELECT name FROM authors WHERE id = ?;", a_id, function(err, rows2) {
+	         	var a_name = rows2.name;
+	         	db.run("INSERT INTO history (p_id, p_title, s_subtitle, a_id, a_name, old_body, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?);", p_id, page_title, req.body.subtitle, a_id, a_name, req.body.sub_body, getTimeStamp(), function(err) {
+					if (err) {
+						res.redirect("/error");
+					} else {
+						db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows1) {
+							send_email(p_id, rows1.title, db);	
+							res.redirect("/page/"+p_id);
+						});
+					}
 				});
-			}
+         	});
 		});
 	}
 });
@@ -543,6 +660,33 @@ app.get("/page/:p_id/discussions", function(req, res) {
 				res.render("discussion_show.ejs", {page: rows, discussions: rows1, replies: rows2});
 			});
 		});
+	});
+});
+
+// site history
+app.get("/main/history", function(req, res) {
+	db.all("SELECT * FROM history;", function(err, rows) {
+		res.render("history_index.ejs", {history: rows})
+	});
+});
+
+// total page history
+app.get("/page/:p_id/history", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	db.all("SELECT * FROM history WHERE p_id = ?;", function(err, rows) {
+		res.render("history_show.ejs", {history: rows});
+	});
+});
+
+// each page history
+app.get("/page/:p_id/history/:h.id", function(req, res) {
+	var p_id = parseInt(req.params.p_id);
+	var h_id = parseInt(req.params.h_id);
+	db.get("SELECT * FROM history WHERE id = ?;", function(err, rows) {
+		rows.map(function(obj) {
+			obj.old_body = marked(obj.old_body);
+		});
+		res.render("history_page.ejs", {history: rows});
 	});
 });
 
@@ -599,15 +743,19 @@ app.delete("/page/:p_id", function(req, res) {
 	db.run("DELETE FROM pages WHERE id = ?;", p_id, function(err) {
 		db.run("DELETE FROM sections WHERE p_id = ?;", p_id, function(err) {
 			db.get("SELECT id FROM discussions WHERE p_id = ?;", p_id, function(err, rows) {
-				db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
-					db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
-						if (err) {
-							res.redirect("/error"); 
-						} else {
-							res.redirect("/table_of_contents");
-						}
+				if (rows !== undefined) {
+					db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
+						db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
+							if (err) {
+								res.redirect("/error"); 
+							} else {
+								res.redirect("/table_of_contents");
+							}
+						});
 					});
-				});
+				} else {
+					res.redirect("/table_of_contents");
+				}
 			});
 		});
 		

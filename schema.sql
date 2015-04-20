@@ -56,8 +56,10 @@ DROP TABLE IF EXISTS history;
 CREATE TABLE history (
 	id INTEGER PRIMARY KEY,
 	p_id INTEGER,
-	s_id INTEGER,
+	p_title TEXT,
+	s_subtitle TEXT,
 	a_id INTEGER,
+	a_name TEXT,
 	old_body TEXT,
 	updated_on TEXT,
 	created_on TEXT
