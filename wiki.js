@@ -25,8 +25,23 @@ app.use(express.static(__dirname+"/public"));
 // module for marked down files to become html
 var marked = require("marked");
 
-// error image
-var error = "http://media.giphy.com/media/EFyAyqmMZgwvK/giphy.gif";
+// sendgrid api name and key
+var secrets = require("./secrets.json");
+var apiName = secrets["apiName"];
+var apiKey = secrets["apiKey"];
+
+var sendgrid  = require('sendgrid')(apiName, apiKey);
+var email = new sendgrid.Email({
+  bcc: "subscriber@email.com",
+  from: "anonymous",
+  subject: "Title of Updated Page",
+  text: "Check out the new changes to page"
+});
+
+// sendgrid.send(email, function(err, json) {
+//   if (err) { return console.error(err); }
+//   console.log(json);
+// });
 
 // redirecting to my homepage
 app.get("/", function(req, res) {
