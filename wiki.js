@@ -151,7 +151,8 @@ app.get("/author/:a_id", function(req, res) {
 // rendering the author edit page
 app.get("/author/:a_id/edit", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
-	db.get("SELECT * FROM authors WHERE a_id= ?;", a_id, function(err, rows) {
+	db.get("SELECT * FROM authors WHERE id= ?;", a_id, function(err, rows) {
+		console.log(rows);
 		res.render("author_edit.ejs", {author: rows});
 	});
 });
@@ -159,7 +160,7 @@ app.get("/author/:a_id/edit", function(req, res) {
 // updating the specific author 
 app.put("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
-	db.run("UPDATE authors SET name = ?, bio = ? WHERE a_id =?;", req.body.name.trim(), req.body.bio, a_id, function(err) {
+	db.run("UPDATE authors SET name = ?, bio = ? WHERE id =?;", req.body.name.trim(), req.body.bio, a_id, function(err) {
 		if (err) {
 			res.redirect("/error");
 		} else {
@@ -684,8 +685,7 @@ app.get("/page/:p_id/discussions", function(req, res) {
 // site history
 app.get("/main/history", function(req, res) {
 	db.all("SELECT * FROM history;", function(err, rows) {
-		console.log(rows);
-		res.render("history_index.ejs", {history: rows})
+		res.render("history_index.ejs", {history: rows.reverse()})
 	});
 });
 
@@ -703,8 +703,7 @@ app.get("/page/:p_id/history/:h_id", function(req, res) {
 app.get("/page/:p_id/history", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	db.all("SELECT * FROM history WHERE p_id = ?;", p_id, function(err, rows) {
-		console.log(rows);
-		res.render("history_show.ejs", {history: rows});
+		res.render("history_show.ejs", {history: rows.reverse()});
 	});
 });
 
@@ -734,7 +733,7 @@ app.delete("/page/:p_id/discussion/:d_id/reply/:r_id", function(req, res){
 		if (err) {
 			res.redirect("/error");
 		} else{
-			console.log("does it reach here?")
+			
 			res.redirect("/page/"+p_id+"/discussions");
 		}
 	});
@@ -758,25 +757,32 @@ app.delete("/page/:p_id/discussion/:d_id", function(req, res) {
 // delete a page which deletes all of it's articles, discussions and replies
 app.delete("/page/:p_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	db.run("DELETE FROM pages WHERE id = ?;", p_id, function(err) {
-		db.run("DELETE FROM sections WHERE p_id = ?;", p_id, function(err) {
-			db.get("SELECT id FROM discussions WHERE p_id = ?;", p_id, function(err, rows) {
-				if (rows !== undefined) {
-					db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
-						db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
-							if (err) {
-								res.redirect("/error"); 
-							} else {
-								res.redirect("/table_of_contents");
-							}
-						});
-					});
-				} else {
-					res.redirect("/table_of_contents");
-				}
+	db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows) {
+		var p_title = rows.title;
+		var old_body = getTimeStamp();
+		db.run("DELETE FROM pages WHERE id = ?;", p_id, function(err) {
+			db.run("INSERT INTO history (p_id, p_title, old_body) VALUES (?, ?, ?);", p_id, p_title, old_body, function(err){
+				if (err) { res.res.redirect("/error"); }
 			});
+			db.run("DELETE FROM sections WHERE p_id = ?;", p_id, function(err) {
+				db.get("SELECT id FROM discussions WHERE p_id = ?;", p_id, function(err, rows) {
+					if (rows !== undefined) {
+						db.run("DELETE FROM replies WHERE d_id = ?;", rows.id, function(err) {
+							db.run("DELETE FROM discussions WHERE p_id = ?;", p_id, function(err) {
+								if (err) {
+									res.redirect("/error"); 
+								} else {
+									res.redirect("/table_of_contents");
+								}
+							});
+						});
+					} else {
+						res.redirect("/table_of_contents");
+					}
+				});
+			});
+			
 		});
-		
 	});
 });
 
@@ -784,13 +790,24 @@ app.delete("/page/:p_id", function(req, res) {
 app.delete("/page/:p_id/section/:s_id", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
 	var s_id = parseInt(req.params.s_id);
-	db.run("DELETE FROM sections WHERE id = ?;", s_id, function(err) {
-		if (err) {
-			res.redirect("/error"); 
-		} else {
-			res.redirect("/page/"+p_id);
-		}
-	});
+	db.get("SELECT title FROM pages WHERE id = ?;", p_id, function(err, rows) {
+		var p_title = rows.title;
+		var old_body = getTimeStamp();
+		db.get("SELECT subtitle FROM sections WHERE id = ?;", s_id, function(err, rows1) {
+			var subtitle = rows1.subtitle;
+			db.run("INSERT INTO history (p_id, p_title, s_subtitle, old_body) VALUES (?, ?, ?, ?);", p_id, p_title, subtitle, old_body, function(err){
+				if (err) { res.res.redirect("/error"); }
+			});
+			db.run("DELETE FROM sections WHERE id = ?;", s_id, function(err) {
+				if (err) {
+					res.redirect("/error"); 
+				} else {
+					res.redirect("/page/"+p_id);
+				}
+			});
+
+		});
+	})
 });
 
 // in case they try to go somewhere else

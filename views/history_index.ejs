@@ -20,6 +20,10 @@
 			<li><a href="/page/<%= history[i].p_id %>/history/<%= history[i].id %>">On <%= history[i].updated_on %>, <%= history[i].s_subtitle %> of <%= history[i].p_title %> was updated by <%= history[i].a_name %>.</a></li>
 		<% } else if (history[i].updated_on && history[i].p_id){ %>
 			<li><a href="/page/<%= history[i].p_id %>/history/<%= history[i].id %>">On <%= history[i].updated_on %>, <%= history[i].p_title %> was updated by <%= history[i].a_name %>.</a></li>
+		<% } else if (history[i].s_subtitle) { %>
+				<li><a href="/page/<%= history[i].p_id %>/history"><%= history[i].s_subtitle %> of <%= history[i].p_title %> was deleted on <%= history[i].old_body %>.</a></li>
+		<% } else { %>
+			<li><a href="/page/<%= history[i].p_id %>/history"><%= history[i].p_title %> was deleted on <%= history[i].old_body %>.</a></li>
 	<% }} %>
 	</ul>
 </div>

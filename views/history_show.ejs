@@ -10,8 +10,8 @@
 
 <div class="content">
 <h1><%= history[0].p_title %> History</h1>
-<a href="/page/<%= history[0].p_id %>/history">Back to <%= history[0].p_title %></a>
-<br>
+<a href="/page/<%= history[0].p_id %>">Back to <%= history[0].p_title %></a>
+<br><br>
 
 	<% for (var i = 0; i < history.length; i++) { %>
 		<% if (history[i].created_on && history[i].s_subtitle) { %>
@@ -22,6 +22,10 @@
 				<li><a href="/page/<%= history[i].p_id %>/history/<%= history[i].id %>">On <%= history[i].updated_on %>, <%= history[i].s_subtitle %> of <%= history[i].p_title %> was updated by <%= history[i].a_name %>.</a></li>
 		<% } else if (history[i].updated_on && history[i].p_id){ %>
 				<li><a href="/page/<%= history[i].p_id %>/history/<%= history[i].id %>">On <%= history[i].updated_on %>, <%= history[i].p_title %> was updated by <%= history[i].a_name %>.</a></li>
+		<% } else if (history[i].s_subtitle) { %>
+				<li><a href="/page/<%= history[i].p_id %>/history"><%= history[i].s_subtitle %> of <%= history[i].p_title %> was deleted on <%= history[i].old_body %>.</a></li>
+		<% } else { %>
+			<li><a href="/page/<%= history[i].p_id %>/history"><%= history[i].p_title %> was deleted on <%= history[i].old_body %>.</a></li>
 		<% }%>
 	<% } %>
 </div>
