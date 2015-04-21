@@ -10,14 +10,22 @@
 	<h1><%= author.name %></h1>
 	<a href="/author/<%= author.id %>/edit">edit</a><br>
 	<%- bio %>
-	<h3>Authored/Contributed To:</h3>
+	<h3>Authored:</h3>
 	<ul>
-	<% if (pages != undefined) { for(var i = 0; i < pages.length; i++) { %> 
-		<li><a href="/page/<%= pages[i].id %>"><%= pages[i].title %></a></li>
-	<% }} %>
+	<% if (pages != undefined) { for(var i = 0; i < pages.length; i++) { %>
+	<% if (pages[i].created_on != null) { %>
+		<li><a href="/page/<%= pages[i].p_id %>/history"><%= pages[i].p_title %></a></li>
+	<% }}} %>
 	</ul>
 	<br>
-	
+	<h3>Contributed To:</h3>
+	<ul>
+	<% if (pages != undefined) { for(var i = 0; i < pages.length; i++) { %> 
+	<% if (pages[i].updated_on != null) { %>
+		<li><a href="/page/<%= pages[i].p_id %>/history"><%= pages[i].p_title %></a></li>
+	<% }}} %>
+	</ul>
+	<br>
 </div>
 </body>
 </html>

@@ -141,7 +141,7 @@ app.post("/authors", function(req, res) {
 app.get("/author/:a_id", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
 	db.get("SELECT * FROM authors WHERE id = ?;", a_id, function(err, rows) {
-		db.all("SELECT * FROM pages WHERE a_id = ?;", a_id, function(err, rows1) {
+		db.all("SELECT * FROM history WHERE a_id = ?;", a_id, function(err, rows1) {
 			var bio = marked(rows.bio);
 			res.render("author_show.ejs", {author: rows, bio: bio, pages: rows1});
 		});
@@ -152,7 +152,6 @@ app.get("/author/:a_id", function(req, res) {
 app.get("/author/:a_id/edit", function(req, res) {
 	var a_id = parseInt(req.params.a_id);
 	db.get("SELECT * FROM authors WHERE id= ?;", a_id, function(err, rows) {
-		console.log(rows);
 		res.render("author_edit.ejs", {author: rows});
 	});
 });
@@ -314,9 +313,6 @@ app.get("/page/:p_id/subscribe", function(req, res) {
 // to add the subscriber to my table
 app.post("/page/:p_id/subscribe/add", function(req, res) {
 	var p_id = parseInt(req.params.p_id);
-	console.log(req.params);
-	console.log(req.body);
-	console.log("hello");
 	db.run("INSERT INTO subscribers (subscriber_email, p_id) VALUES (?, ?);", req.body.subscribe, p_id, function(err) {
 		if (err) {
 			res.redirect("/error");
