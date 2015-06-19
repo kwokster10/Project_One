@@ -823,8 +823,9 @@ app.get("/:somethingelse/:somewhereElse/:somewhereOther", function(req, res) {
 
 
 // making the server listen on port 3000
-app.listen(3000);
-console.log("Listening on 3000");
+var port = Number(process.env.PORT || 3000);
+app.listen(port);
+console.log("Listening on "+ port);
 
 
 
